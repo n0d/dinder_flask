@@ -1,21 +1,22 @@
 
 
+
 {% block head %}
 
     <meta charset="utf-8">
-    <title>Brandon Heller</title>
+    <title>Dinder</title>
     <meta name="description" content="">
     <meta name="author" content="">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+{#    <meta name="viewport" content="width=device-width, initial-scale=1">#}
 
     <!-- FONT
     –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
-    <link href="//fonts.googleapis.com/css2?family=Space+Mono&family=Work+Sans&display=swap" rel="stylesheet" type="text/css">
+{#    <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">#}
+{#    <link href="//fonts.googleapis.com/css2?family=Space+Mono&family=Work+Sans&display=swap" rel="stylesheet" type="text/css">#}
 
     <!-- Skeleton.CSS -->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/skeleton/normalize.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/skeleton/skeleton.css') }}">
+{#    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/skeleton/normalize.css') }}">#}
+{#    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/skeleton/skeleton.css') }}">#}
 
     <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/custom.css') }}">
@@ -26,30 +27,14 @@
 
 {% endblock %}
 
-{% block content %}
-    <div class="container">
-        <div class="header">
-            <div class="row" >
-                <a href="{{ url_for('main.index') }}"><h4 class="four columns">Brandon Heller </h4></a>
-            </div>
 
-            <div class="row">
-                <!-- h6 w/ smaller font size -->
-                <p class="eight columns">
-                    I'm a Software Developer. I like working with data and building websites with <a href="https://flask.palletsprojects.com/en/1.1.x/">Flask</a>.
-                </p>
-            </div>
-        </div>
-        <div class="row" >
-            <h4 class="four columns">Things I've built: </h4>
-        </div>
-        {% block page_content %}
-        {% endblock %}
-    </div> <!-- container -->
+{% block content %}
 {% endblock %}
 
 
-
+{% block scripts %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+{% endblock %}
 
 
 
