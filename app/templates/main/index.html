@@ -6,7 +6,10 @@
 {% endblock %}
 
 {% block content %}
-    <div id="board"></div>
+    <div id="board">
+        <div id="swipeLeftButton"></div>
+        <div id="swipeRightButton"></div>
+    </div>
 
 
 {% endblock %}
@@ -15,9 +18,25 @@
     {{ super() }}
     <script type="text/javascript">
 
-        var images = new Array()
+        var currImageArrayIndex=0
+        var images = []
+
         let board = document.querySelector('#board')
         let carousel = new Carousel(board)
+
+        //listeners for swipe left/right buttons
+        document.getElementById('swipeLeftButton').onclick = function () {
+            carousel.throwCard(-(carousel.board.clientWidth + carousel.topCard.clientWidth), 30)
+        }
+
+        document.getElementById('swipeRightButton').onclick = function () {
+            carousel.throwCard(carousel.board.clientWidth, 0)
+        }
+
+        window.addEventListener('popstate', function (e) {
+            console.log(window.location.pathname);
+            carousel.shrinkInfo()
+        });
 
     </script>
 {% endblock %}

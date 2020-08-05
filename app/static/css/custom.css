@@ -4,6 +4,7 @@ body {
     height: 100%;
     margin: 0;
     padding: 0;
+    text-align: center;
 }
 
 #board {
@@ -12,15 +13,17 @@ body {
     position: relative;
     overflow: hidden;
     background-color: rgb(245, 247, 250);
+    max-width: 1000px;
+    display:inline-block;
 }
 
 .card {
-    width: 800px;
-    height: 800px;
+    width: 97%;
+    height: 80%;
     position: absolute;
     top: 50%;
     left: 50%;
-    border-radius: 1%;
+    border-radius: 2%;
     box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.1);
     background-color: white;
     transform: translateX(-50%) translateY(-50%) scale(0.95);
@@ -36,7 +39,6 @@ body {
     margin-right:10px;
     margin-left:10px;
     padding-bottom:2px;
-
 }
 
 .imageNumIndicator > div {
@@ -45,4 +47,41 @@ body {
     height:10px;
     margin:3px;
     border-radius: 5px;
+}
+
+.backToRegularViewButton {
+    display: none;
+    position: absolute;
+    bottom: -60px;
+    right: 60px;
+    height: 120px;
+    width: 120px;
+    border-radius: 50%;
+    background-color: orange;
+}
+
+#swipeLeftButton {
+    display: block;
+    position: relative;
+    top: 91.5%;
+    left: 25%;
+    height: 7vh;
+    width: 7vh;
+    border-radius: 50%;
+    background-color: red;
+}
+
+/* offset with the size of the circle (120px) since relative position places swipeRight right below swipeRight without positioning */
+#swipeRightButton {
+    display: block;
+    position: relative;
+    top: calc(91.5% - 7vh);
+    top: -moz-calc(91.5% - 7vh);
+    top: -webkit-calc(91.5% - 7vh);
+    top: -o-calc(91.5% - 7vh);
+    left: 63%;
+    height: 7vh;
+    width: 7vh;
+    border-radius: 50%;
+    background-color: turquoise;
 }
