@@ -48,9 +48,14 @@ class Carousel {
                 this.onTap(e)
             })
             this.hammer.on('pan', (e) => {
+                //regular view, panning is a left/right swipe.
                 if (!this.isInfoView) {
-                    this.onPan(e)
+                    this.onPanRegularView(e)
                 }
+                //scroll between images on left/right pans
+                // else {
+                //     this.onPanInfoView(e)
+                // }
             })
 
         }
@@ -92,13 +97,13 @@ class Carousel {
         this.topCard.style.height = '70%'
         this.topCard.style.top = '35%' //puts the topCard at the top of the screen.
         this.topCard.style.borderRadius = '0%'
-        // this.topCard.style.boxShadow = 'none'
 
         //hide the next card.
         this.nextCard.style.display='none'
 
         //show button to go back to regular view
-        this.topCard.children[1].style.display = 'block'
+        document.getElementById('backToRegularViewButton').style.display = 'block'
+        document.getElementById('backToRegularViewButton').style.pointerEvents = 'auto'
     }
 
     shrinkInfo () {
@@ -120,7 +125,7 @@ class Carousel {
         this.nextCard.style.display='block'
 
         //hide button when back in regular view
-        this.topCard.children[1].style.display = 'none'
+        document.getElementById('backToRegularViewButton').style.display = 'none'
     }
 
     throwCard (posX, deg) {
@@ -128,6 +133,11 @@ class Carousel {
         this.topCard.style.transform =
             'translateX(' + posX + 'px) rotate(' + deg + 'deg)'
 
+        this.topCard.children[1].style.opacity = (posX + 475.5) / 400;
+        this.topCard.children[2].style.opacity = ((posX + 475.5) / 400) * -1;
+
+        document.getElementById('backToRegularViewButton').style.display = 'none'
+        document.getElementById('backToRegularViewButton').style.pointerEvents = 'none'
         // wait transition end
         setTimeout(() => {
             // remove swiped card
@@ -201,8 +211,8 @@ class Carousel {
         }
     }
 
-    onPan(e) {
-        console.log("panning...");
+    onPanRegularView(e) {
+        console.log("panning regular view...");
         if (!this.isPanning) {
 
             this.isPanning = true
@@ -223,7 +233,6 @@ class Carousel {
             // get finger position on top card, top (1) or bottom (-1)
             this.isDraggingFrom =
                 (e.center.y - bounds.top) > this.topCard.clientHeight / 2 ? -1 : 1
-
         }
 
         // get new coordinates
@@ -247,15 +256,20 @@ class Carousel {
         this.topCard.style.transform =
             'translateX(' + posX + 'px) translateY(' + posY + 'px) rotate(' + deg + 'deg) rotateY(0deg) scale(1)'
 
+
+        this.topCard.children[1].style.opacity = (posX + 475.5) / 400;
+        this.topCard.children[2].style.opacity = ((posX + 475.5) / 400) * -1;
+        // console.log(this.startPosX)
+        // console.log((posX + 475.5) / 300)
+
         // scale up next card
         if (this.nextCard) this.nextCard.style.transform =
             'translateX(-50%) translateY(-50%) rotate(0deg) rotateY(0deg) scale(' + scale + ')'
 
         if (e.isFinal) {
-
+            this.topCard.children[1].style.opacity = 0;
+            this.topCard.children[2].style.opacity = 0;
             this.isPanning = false
-
-            // let successful = false
 
             // set back transition properties
             this.topCard.style.transition = 'transform 200ms ease-out'
@@ -266,17 +280,11 @@ class Carousel {
 
                 //posX
                 this.throwCard(this.board.clientWidth, deg)
-                // successful = true
-                // get right border position
-                // posX = this.board.clientWidth
 
             } else if (propX < -0.25 && e.direction === Hammer.DIRECTION_LEFT) {
 
                 //posX
                 this.throwCard(-(this.board.clientWidth + this.topCard.clientWidth), deg)
-                // successful = true
-                // get left border position
-                // posX = -(this.board.clientWidth + this.topCard.clientWidth)
             }
             else {
                 // reset cards position and size
@@ -285,30 +293,7 @@ class Carousel {
                 if (this.nextCard) this.nextCard.style.transform =
                     'translateX(-50%) translateY(-50%) rotate(0deg) rotateY(0deg) scale(0.95)'
             }
-
-
-            // } else if (propY < -0.25 && e.direction === Hammer.DIRECTION_UP) {
-            //
-            //     successful = true
-            //     // get top border position
-            //     posY = -(this.board.clientHeight + this.topCard.clientHeight)
-            //
-            // }
-
-
-            // if (successful) {
-
-                // throw card in the chosen direction
-
-
-            // } else {
-
-
-
-            // }
-
         }
-
     }
 
     push() {
@@ -349,15 +334,13 @@ class Carousel {
         imageNumIndicator.classList.add('imageNumIndicator')
         card.appendChild(imageNumIndicator)
 
-        /* create button to shrink info view back to normal view (bottom right of images section) */
-        let backToRegularViewButton = document.createElement('div')
-        backToRegularViewButton.classList.add('backToRegularViewButton')
-        card.appendChild(backToRegularViewButton)
-        backToRegularViewButton.onclick = function () {
-            // from /info back to main page (caught by popstate listener on index.html, same thing that catches the back button)
-            history.back()
-        }
+        let swipeRightGreenIndicator = document.createElement('div')
+        swipeRightGreenIndicator.id = 'swipeRightGreenIndicator'
+        card.appendChild(swipeRightGreenIndicator)
 
+        let swipeLeftRedIndicator = document.createElement('div')
+        swipeLeftRedIndicator.id = 'swipeLeftRedIndicator'
+        card.appendChild(swipeLeftRedIndicator)
 
         let imageNumIndicatorTab
         let imageNumIndicatorTabNum

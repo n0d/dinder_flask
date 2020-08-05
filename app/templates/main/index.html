@@ -7,6 +7,8 @@
 
 {% block content %}
     <div id="board">
+        <div id="imageNumIndicator"></div>
+        <div id="backToRegularViewButton"></div>
         <div id="swipeLeftButton"></div>
         <div id="swipeRightButton"></div>
     </div>
@@ -31,6 +33,11 @@
 
         document.getElementById('swipeRightButton').onclick = function () {
             carousel.throwCard(carousel.board.clientWidth, 0)
+        }
+
+        document.getElementById('backToRegularViewButton').onclick = function () {
+            // from /info back to main page (caught by popstate listener on index.html, same thing that catches the back button)
+            history.back()
         }
 
         window.addEventListener('popstate', function (e) {
