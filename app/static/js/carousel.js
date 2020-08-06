@@ -119,7 +119,7 @@ class Carousel {
         this.topCard.style.height = '80%'
         this.topCard.style.top = '50%' //puts the topCard at the top of the screen.
         this.topCard.style.borderRadius = '2%'
-        this.topCard.style.boxShadow = '0px 4px 4px 0px rgba(0, 0, 0, 0.1)'
+        this.topCard.style.boxShadow = '0px 4px 4px 0px rgba(0, 0, 0, 0.1), 0px -500px 100px -100px rgba(0, 0, 0, .3) inset, 0px 150px 100px -100px rgba(0, 0, 0, 0.12) inset;'
 
         //re-show the next card behind top card.
         this.nextCard.style.display='block'
@@ -168,7 +168,7 @@ class Carousel {
             (e.center.x - bounds.left) > this.topCard.clientWidth * .5 ? false : true
 
         if (this.isTappingBottom && !this.isInfoView ) {
-            console.log('tap bottom')
+            // console.log('tap bottom')
             window.history.pushState({url:'info', title:'info'}, 'info', 'info')
             this.expandInfo(e)
         }
@@ -188,7 +188,7 @@ class Carousel {
                     //update background image.
                     this.topCard.style.backgroundImage = "url(" + images[cardCurrImageArrayIndex][currImageNum - 2].src + ")"
                 }
-                console.log('tap left')
+                // console.log('tap left')
             } else {
                 if (currImageNum === numImagesOnCard) {
                     this.jiggleImage(e)
@@ -206,13 +206,13 @@ class Carousel {
                         this.topCard.style.backgroundImage = "url(" + images[cardCurrImageArrayIndex][currImageNum].src + ")"
                     }
                 }
-                console.log('tap right')
+                // console.log('tap right')
             }
         }
     }
 
     onPanRegularView(e) {
-        console.log("panning regular view...");
+        // console.log("panning regular view...");
         if (!this.isPanning) {
 
             this.isPanning = true
@@ -273,7 +273,7 @@ class Carousel {
 
             // set back transition properties
             this.topCard.style.transition = 'transform 200ms ease-out'
-            if (this.nextCard) this.nextCard.style.transition = 'transform 100ms linear'
+            // if (this.nextCard) this.nextCard.style.transition = 'transform 100ms linear'
 
             // check threshold and movement direction
             if (propX > 0.25 && e.direction === Hammer.DIRECTION_RIGHT) {
@@ -342,6 +342,59 @@ class Carousel {
         swipeLeftRedIndicator.id = 'swipeLeftRedIndicator'
         card.appendChild(swipeLeftRedIndicator)
 
+        /* restaurant Info */
+        let restaurantName = document.createElement('h1')
+        restaurantName.id = 'restaurantName'
+        restaurantName.innerHTML='Smokin Oak'
+        card.appendChild(restaurantName)
+
+        let restaurantRating = document.createElement('h2')
+        restaurantRating.id = 'restaurantRating'
+        card.appendChild(restaurantRating)
+
+        let ratingStar1 = document.createElement('span')
+        ratingStar1.classList.add('fa')
+        ratingStar1.classList.add('fa-star')
+        ratingStar1.classList.add('checked')
+        restaurantRating.appendChild(ratingStar1)
+
+        let ratingStar2 = document.createElement('span')
+        ratingStar2.classList.add('fa')
+        ratingStar2.classList.add('fa-star')
+        ratingStar2.classList.add('checked')
+        restaurantRating.appendChild(ratingStar2)
+
+        let ratingStar3 = document.createElement('span')
+        ratingStar3.classList.add('fa')
+        ratingStar3.classList.add('fa-star')
+        ratingStar3.classList.add('checked')
+        restaurantRating.appendChild(ratingStar3)
+
+        let ratingStar4 = document.createElement('span')
+        ratingStar4.classList.add('fa')
+        ratingStar4.classList.add('fa-star')
+        ratingStar4.classList.add('checked')
+        restaurantRating.appendChild(ratingStar4)
+
+        let ratingStar5 = document.createElement('span')
+        ratingStar5.classList.add('fa')
+        ratingStar5.classList.add('fa-star')
+        restaurantRating.appendChild(ratingStar5)
+
+        let restaurantType = document.createElement('h2')
+        restaurantType.id = 'restaurantType'
+        restaurantType.innerHTML='Barbecue restaurant'
+        card.appendChild(restaurantType)
+
+        let restaurantMilesAway = document.createElement('h2')
+        restaurantMilesAway.id = 'restaurantMilesAway'
+        restaurantMilesAway.innerHTML='4 miles away'
+        card.appendChild(restaurantMilesAway)
+
+        let restaurantDescription = document.createElement('div')
+        restaurantDescription.id = 'restaurantDescription'
+        card.appendChild(restaurantDescription)
+
         let imageNumIndicatorTab
         let imageNumIndicatorTabNum
         for (var i = 0; i < card.getAttribute('numImages'); i++) {
@@ -358,10 +411,9 @@ class Carousel {
             imageNumIndicatorTab.style.display='none';
         }
 
-        card.id = 'card1'
+        card.id = 'card'
 
         card.style.backgroundImage =  "url(" + images[currImageArrayIndex][0].src + ")"
-        card.style.boxShadow = '0 20px 20px 10px rgba(0, 0, 0, .1) inset'
 
         this.board.insertBefore(card, this.board.firstChild)
 
