@@ -5,17 +5,19 @@ body {
     margin: 0;
     padding: 0;
     text-align: center;
-    touch-action:manipulation;
+scroll-behavior: smooth;
 }
 
 #board {
     width: 100%;
     height: 100%;
     position: relative;
-    overflow: hidden;
+    /*overflow: hidden;*/
     background-color: rgb(245, 247, 250);
     max-width: 1000px;
     display:inline-block;
+    overflow:hidden;
+
 }
 
 .card {
@@ -29,7 +31,6 @@ body {
     box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.1),
                 0px -460px 100px -100px rgba(0, 0, 0, .5) inset,
                 0px 150px 100px -100px rgba(0, 0, 0, 0.12) inset;
-    /*20px 50px 100px -10px rgba(0, 0, 0, .1) inset;*/
     background-color: white;
     transform: translateX(-50%) translateY(-50%) scale(0.95);
     overflow:hidden;
@@ -37,13 +38,22 @@ body {
     color:whitesmoke;
 }
 
-.card > h1 {
+h1 {
     font-size:3.8em;
-    text-shadow:2px 2px 2px black;
+    word-wrap:break-word;
 }
 
-.card > h2 {
+h2 {
     font-size:2.8em;
+}
+
+p {
+    font-size: 2.8em;
+    margin-bottom:1rem;
+}
+
+/*text shadow inside card*/
+#restaurantInfoOnCard > h1, h2 {
     text-shadow:2px 2px 2px black;
 }
 
@@ -82,28 +92,30 @@ body {
 
 #swipeLeftButton {
     display: block;
-    position: relative;
+    position: fixed;
     top: 91.5%;
     left: 25%;
     height: 7vh;
     width: 7vh;
     border-radius: 50%;
     background-color: red;
+    z-index: 10;
 }
 
 /* offset with the size of the circle (120px) since relative position places swipeRight right below swipeRight without positioning */
 #swipeRightButton {
     display: block;
-    position: relative;
-    top: calc(91.5% - 7vh);
-    top: -moz-calc(91.5% - 7vh);
-    top: -webkit-calc(91.5% - 7vh);
-    top: -o-calc(91.5% - 7vh);
+    position: fixed;
+    top: calc(91.5%);
+    top: -moz-calc(91.5%);
+    top: -webkit-calc(91.5%);
+    top: -o-calc(91.5%);
     left: 63%;
     height: 7vh;
     width: 7vh;
     border-radius: 50%;
     background-color: turquoise;
+    z-index: 10;
 }
 
 #swipeLeftRedIndicator {
@@ -154,7 +166,7 @@ body {
     padding-left:7px;
 }
 
-#restaurantRating > .checked {
+.checked {
     color:orange;
 }
 
@@ -176,4 +188,15 @@ body {
     height:75px;
     color:white;
     text-align:left;
+}
+
+#restaurantInfoBelowCard {
+    position: absolute;
+    bottom:23%;
+    left:3%;
+    width:100%;
+    height:75px;
+    color:black;
+    text-align:left;
+    display:none;
 }

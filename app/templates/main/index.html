@@ -10,6 +10,31 @@
         <div id="backToRegularViewButton"></div>
         <div id="swipeLeftButton"></div>
         <div id="swipeRightButton"></div>
+
+        <div id="restaurantInfoBelowCard" class="container ">
+            <h1 >
+                Smokin' Oak
+            </h1>
+            <h2>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star checked"></span>
+                <span class="fa fa-star"></span>
+            </h2>
+            <p>
+                <span style="color:gray"><i class="fas fa-dollar-sign"></i><i class="fas fa-dollar-sign"></i></span>  Barbecue Restaurant
+            </p>
+            <p>
+                <i class="fas fa-map-marker-alt"></i> 4 miles away
+            </p>
+            <p>
+                Laid-back stop for Texas-style BBQ meats smoked on-site & hearty sides plus catering & a full bar.
+            </p>
+            {# extra space at the bottom of the screen to display swipe left/right buttons cleanly without overlapping the text. #}
+            <h1 style="visibility: hidden">1</h1>
+            <h1 style="visibility: hidden">1</h1>
+        </div>
     </div>
 
 
@@ -19,30 +44,74 @@
     {{ super() }}
     <script type="text/javascript">
 
+        /* index alternates between 0 and 1, since there are always two buffers of images for preloading. */
         var currImageArrayIndex=0
         var images = []
 
         let board = document.querySelector('#board')
         let carousel = new Carousel(board)
 
-        //listeners for swipe left/right buttons
+        //listeners for swipe left/right buttons. history.back() executes the popstate listener below (calls shrinkInfo).
         document.getElementById('swipeLeftButton').onclick = function () {
-            carousel.throwCard(-(carousel.board.clientWidth + carousel.topCard.clientWidth), 30)
+            carousel.isLeftSwipe = true
+            if (carousel.isInfoView) {
+                history.back()
+            }
+            else {
+                carousel.throwCard(-(carousel.board.clientWidth + carousel.topCard.clientWidth), 30)
+            }
         }
 
         document.getElementById('swipeRightButton').onclick = function () {
-            carousel.throwCard(carousel.board.clientWidth, 0)
+            carousel.isRightSwipe = true
+            if (carousel.isInfoView) {
+                history.back()
+            }
+            else {
+                carousel.throwCard(carousel.board.clientWidth, 0)
+            }
         }
 
         document.getElementById('backToRegularViewButton').onclick = function () {
             // from /info back to main page (caught by popstate listener on index.html, same thing that catches the back button)
             history.back()
+
         }
 
-        window.addEventListener('popstate', function (e) {
-            console.log(window.location.pathname);
-            carousel.shrinkInfo()
-        });
+        function whichTransitionEvent() {
+            var el = document.createElement('fake'),
+                transEndEventNames = {
+                    'WebkitTransition' : 'webkitTransitionEnd',// Saf 6, Android Browser
+                    'MozTransition'    : 'transitionend',      // only for FF < 15
+                    'transition'       : 'transitionend'       // IE10, Opera, Chrome, FF 15+, Saf 7+
+                };
 
+            for(var t in transEndEventNames){
+                if( el.style[t] !== undefined ){
+                    return transEndEventNames[t];
+                }
+            }
+        }
+
+
+
+        //called when 1) hitting back button (only applicable when the app is in the /info state, or the info view) or when hitting the "back to regular view" button,
+        // or 2) when the swipe right/left button is selected. if in the info view, history.back() is called, which triggers the popstate event listener below.
+        window.addEventListener('popstate', function (e) {
+            //shrink the view back to regular swipe view. includes some transitions
+            carousel.shrinkInfo()
+            //grab the "top card" via jquery
+            // oTransitionEnd MSTransitionEnd
+            var transEndEventName = whichTransitionEvent();
+            $('#card_0').one(transEndEventName, function(e) {
+                console.log(e.type);
+                if (carousel.isLeftSwipe) {
+                    carousel.throwCard(-(carousel.board.clientWidth + carousel.topCard.clientWidth), 30)
+                }
+                else if (carousel.isRightSwipe) {
+                    carousel.throwCard(carousel.board.clientWidth, 0)
+                }
+            });
+        });
     </script>
 {% endblock %}

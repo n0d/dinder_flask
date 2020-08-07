@@ -6,6 +6,8 @@ class Carousel {
         this.board = element
 
         this.isInfoView = false
+        this.isRightSwipe = false
+        this.isLeftSwipe = false
         // add first two cards programmatically
         this.push()
         this.push()
@@ -35,12 +37,13 @@ class Carousel {
             // destroy previous Hammer instance, if present
             if (this.hammer) this.hammer.destroy()
 
+            //{touchAction:'pan-y'}
             // listen for tap and pan gestures on top card
-            this.hammer = new Hammer(this.topCard)
+            this.hammer = new Hammer(this.topCard )
             this.hammer.add(new Hammer.Tap())
             this.hammer.add(new Hammer.Pan({
                 position: Hammer.position_ALL,
-                threshold: 0
+                threshold: 5
             }))
 
             // pass events data to custom callbacks
@@ -52,14 +55,8 @@ class Carousel {
                 if (!this.isInfoView) {
                     this.onPanRegularView(e)
                 }
-                //scroll between images on left/right pans
-                // else {
-                //     this.onPanInfoView(e)
-                // }
             })
-
         }
-
     }
 
     jiggleImage (e) {
@@ -84,14 +81,28 @@ class Carousel {
         }, 100)
     }
 
+    /*
+    * Expand the "info view" from the regular fullscreen swipe view.
+    * */
     expandInfo () {
-        carousel.isInfoView = true
+        this.isInfoView = true
+        //hide restaurant info on the card (now displaying in info section)
+        this.topCard.children[3].style.display='none'
+
+        //allow horizontal scroll, even when card is selected.
+        this.hammer.set({touchAction:'pan-y'})
+        document.getElementById('restaurantInfoBelowCard').style.display = 'block'
+
+        /* enable regular vertical scrolling when in info mode */
+        // document.getElementById('board').style.touchAction = 'pan-y!important'
+        board.style.overflow = 'scroll'
+        board.style.touchAction = 'pan-y !important'
+        document.getElementById('board').style.touchAction = 'pan-y !important'
         // enable transform transition
         this.topCard.style.transition = 'width 100ms ease-out'
         this.topCard.style.transition = 'height 100ms ease-out'
         this.topCard.style.transition = 'top 100ms ease-out'
 
-        // apply rotation around Y axis
         //*note* need to change "height" and "top" attributes to line up image at top of the screen.
         this.topCard.style.width = '100%'
         this.topCard.style.height = '70%'
@@ -106,12 +117,26 @@ class Carousel {
         document.getElementById('backToRegularViewButton').style.pointerEvents = 'auto'
     }
 
+    /*
+    * Shrink the "info view" back to regular fullscreen swipe view.
+    * */
     shrinkInfo () {
-        carousel.isInfoView = false
+        this.isInfoView = false
+
+        /* show restaurant info on card again */
+        this.topCard.children[3].style.display='block'
+
+        /* hammer object is the card. switch back to regular hammer mode. none means it's just responding to the card listeners (pan and tap).*/
+        this.hammer.set({touchAction:'none'})
+
+        /* hiding the info below the card while in regular swipe mode, so there's nothing to vertical scroll to. */
+        board.style.overflow = 'hidden'
+        document.getElementById('restaurantInfoBelowCard').style.display = 'none'
+
         // enable transform transition
-        this.topCard.style.transition = 'width 100ms ease-out'
-        this.topCard.style.transition = 'height 100ms ease-out'
-        this.topCard.style.transition = 'top 100ms ease-out'
+        this.topCard.style.transition = 'width 150ms ease-out'
+        this.topCard.style.transition = 'height 150ms ease-out'
+        this.topCard.style.transition = 'top 150ms ease-out'
 
         // apply rotation around Y axis
         //*note* need to change height and top to line up image at top of the screen.
@@ -129,7 +154,8 @@ class Carousel {
     }
 
     throwCard (posX, deg) {
-        this.topCard.style.transition = 'transform 300ms ease-out'
+
+        this.topCard.style.transition = 'transform 200ms ease-out'
         this.topCard.style.transform =
             'translateX(' + posX + 'px) rotate(' + deg + 'deg)'
 
@@ -138,16 +164,27 @@ class Carousel {
 
         document.getElementById('backToRegularViewButton').style.display = 'none'
         document.getElementById('backToRegularViewButton').style.pointerEvents = 'none'
+        this.topCard.children[3].style.display='block'
+        document.getElementById('restaurantInfoOnCard').style.display = 'block'
+         /* disable regular vertical scrolling when in regular swipe mode */
+        board.style.overflow = 'hidden'
+
+        this.hammer.set({touchAction:'none'})
+
         // wait transition end
         setTimeout(() => {
             // remove swiped card
             this.board.removeChild(this.topCard)
+
             // add new card
             this.push()
             // handle gestures on new top card
             this.handle()
             this.isInfoView = false
-        }, 1000)
+            this.isRightSwipe = false
+            this.isLeftSwipe = false
+            $('#board').children().eq(1).attr('id', 'card_0')
+        }, 200);
     }
 
 
@@ -206,7 +243,6 @@ class Carousel {
                         this.topCard.style.backgroundImage = "url(" + images[cardCurrImageArrayIndex][currImageNum].src + ")"
                     }
                 }
-                // console.log('tap right')
             }
         }
     }
@@ -259,8 +295,6 @@ class Carousel {
 
         this.topCard.children[1].style.opacity = (posX + 475.5) / 400;
         this.topCard.children[2].style.opacity = ((posX + 475.5) / 400) * -1;
-        // console.log(this.startPosX)
-        // console.log((posX + 475.5) / 300)
 
         // scale up next card
         if (this.nextCard) this.nextCard.style.transform =
@@ -294,6 +328,35 @@ class Carousel {
                     'translateX(-50%) translateY(-50%) rotate(0deg) rotateY(0deg) scale(0.95)'
             }
         }
+    }
+
+    onPanInfoView(e) {
+         // console.log("panning info view...");
+        if (!this.isPanning) {
+
+            this.isPanning = true
+            let style = window.getComputedStyle(board)
+            let mx = style.transform.match(/^matrix\((.+)\)$/)
+            this.startPosX = mx ? parseFloat(mx[1].split(', ')[4]) : 0
+            this.startPosY = mx ? parseFloat(mx[1].split(', ')[5]) : 0
+        }
+
+        let posY = e.deltaY + this.startPosY
+
+        // get ratio between swiped pixels and the axes
+        let propY = e.deltaY / board.clientHeight
+
+        let dirY = e.deltaY < 0 ? -1 : 1
+        if (dirY === -1) {
+            console.log('panning up')
+        }
+        else {
+            console.log('panning down')
+        }
+
+         if (e.isFinal) {
+             console.log('done panning')
+         }
     }
 
     push() {
@@ -342,15 +405,20 @@ class Carousel {
         swipeLeftRedIndicator.id = 'swipeLeftRedIndicator'
         card.appendChild(swipeLeftRedIndicator)
 
-        /* restaurant Info */
+
+        /* restaurant Info. put each item in the main "restaurant info" div so it can all be hidden at once. */
+        let restaurantInfoOnCard = document.createElement('div')
+        restaurantInfoOnCard.id = 'restaurantInfoOnCard'
+        card.appendChild(restaurantInfoOnCard)
+
         let restaurantName = document.createElement('h1')
         restaurantName.id = 'restaurantName'
-        restaurantName.innerHTML='Smokin Oak'
-        card.appendChild(restaurantName)
+        restaurantName.innerHTML='Smokin\' Oak'
+        restaurantInfoOnCard.appendChild(restaurantName)
 
         let restaurantRating = document.createElement('h2')
         restaurantRating.id = 'restaurantRating'
-        card.appendChild(restaurantRating)
+        restaurantInfoOnCard.appendChild(restaurantRating)
 
         let ratingStar1 = document.createElement('span')
         ratingStar1.classList.add('fa')
@@ -366,6 +434,7 @@ class Carousel {
 
         let ratingStar3 = document.createElement('span')
         ratingStar3.classList.add('fa')
+        ratingStar3.classList.add('fa-star')
         ratingStar3.classList.add('fa-star')
         ratingStar3.classList.add('checked')
         restaurantRating.appendChild(ratingStar3)
@@ -384,16 +453,16 @@ class Carousel {
         let restaurantType = document.createElement('h2')
         restaurantType.id = 'restaurantType'
         restaurantType.innerHTML='Barbecue restaurant'
-        card.appendChild(restaurantType)
+        restaurantInfoOnCard.appendChild(restaurantType)
 
         let restaurantMilesAway = document.createElement('h2')
         restaurantMilesAway.id = 'restaurantMilesAway'
         restaurantMilesAway.innerHTML='4 miles away'
-        card.appendChild(restaurantMilesAway)
+        restaurantInfoOnCard.appendChild(restaurantMilesAway)
 
         let restaurantDescription = document.createElement('div')
         restaurantDescription.id = 'restaurantDescription'
-        card.appendChild(restaurantDescription)
+        restaurantInfoOnCard.appendChild(restaurantDescription)
 
         let imageNumIndicatorTab
         let imageNumIndicatorTabNum
@@ -411,15 +480,18 @@ class Carousel {
             imageNumIndicatorTab.style.display='none';
         }
 
-        card.id = 'card'
+        // card.id = 'card'
 
         card.style.backgroundImage =  "url(" + images[currImageArrayIndex][0].src + ")"
 
+        if (this.board.childElementCount === 4) {
+            card.id = 'card_0'
+        }
+        else {
+            card.id = 'card_1'
+        }
         this.board.insertBefore(card, this.board.firstChild)
 
         currImageArrayIndex = (currImageArrayIndex === 0) ? 1 : 0
     }
-
-
-
 }
