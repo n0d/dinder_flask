@@ -35,6 +35,7 @@
             <h1 style="visibility: hidden">1</h1>
             <h1 style="visibility: hidden">1</h1>
         </div>
+        <div id="match-overlay"></div>
     </div>
 
 
@@ -75,7 +76,6 @@
         document.getElementById('backToRegularViewButton').onclick = function () {
             // from /info back to main page (caught by popstate listener on index.html, same thing that catches the back button)
             history.back()
-
         }
 
         function whichTransitionEvent() {
@@ -93,15 +93,12 @@
             }
         }
 
-
-
         //called when 1) hitting back button (only applicable when the app is in the /info state, or the info view) or when hitting the "back to regular view" button,
         // or 2) when the swipe right/left button is selected. if in the info view, history.back() is called, which triggers the popstate event listener below.
         window.addEventListener('popstate', function (e) {
             //shrink the view back to regular swipe view. includes some transitions
             carousel.shrinkInfo()
             //grab the "top card" via jquery
-            // oTransitionEnd MSTransitionEnd
             var transEndEventName = whichTransitionEvent();
             $('#card_0').one(transEndEventName, function(e) {
                 console.log(e.type);
@@ -113,5 +110,22 @@
                 }
             });
         });
+
+        var source = new EventSource("{{ url_for('sse.stream') }}");
+
+        source.addEventListener('greeting', function(event) {
+            var data =JSON.parse(event.data);
+            console.log(data)
+            openMatchOverlay()
+        }, false);
+
+        source.addEventListener('error', function(event) {
+            alert("Failed to connect to event stream. Is Redis running?");
+        }, false);
+
+
+        function openMatchOverlay() {
+            document.getElementById('match-overlay').style.height = "100%";
+        }
     </script>
 {% endblock %}
