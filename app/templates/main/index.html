@@ -35,7 +35,27 @@
             <h1 style="visibility: hidden">1</h1>
             <h1 style="visibility: hidden">1</h1>
         </div>
-        <div id="match-overlay"></div>
+        <div id="match-overlay" class="match-overlay">
+            <div class="container">
+                <div class="row">
+            <div id="closeMatchOverlayButton" >
+                    <h1>&times;</h1>
+                </div>
+                    </div>
+{#            <div id="closebtn"><h1 onclick="document.getElementById('match-overlay').style.height = '0%';">&times;</h1></div>#}
+
+                <div class="row">
+                    <h1 style="padding-top: 30%; color: white; font-size: 6em;">You and Bob both like Smokin' Oak!</h1>
+                </div>
+                <img class="u-max-full-width" style="border-radius: 50%; margin-top:12%; border: 5px solid #bbb" src="https://picsum.photos/600/?random=" + Math.round(Math.random() * 1000000)>
+                <div  class="row" >
+                    <button id="reviewMatchRestaurantButton">See More</button>
+                </div>
+                <div id="keepSwipingButton" class="row" >
+                    <h2 style="padding-top:5%; color:white; font-size:4em; opacity:70%;">Keep swiping</h2>
+                </div>
+            </div>
+        </div>
     </div>
 
 
@@ -45,6 +65,15 @@
     {{ super() }}
     <script type="text/javascript">
 
+        // close match overlay if "keep swiping" or if upper right X is pressed.
+         document.getElementById('keepSwipingButton').onclick = function () {
+            document.getElementById('match-overlay').style.height = "0%";
+         }
+
+         // close match overlay if "keep swiping" or if upper right X is pressed.
+         document.getElementById('closeMatchOverlayButton').onclick = function () {
+            document.getElementById('match-overlay').style.height = "0%";
+         }
         /* index alternates between 0 and 1, since there are always two buffers of images for preloading. */
         var currImageArrayIndex=0
         var images = []
@@ -71,6 +100,7 @@
             else {
                 carousel.throwCard(carousel.board.clientWidth, 0)
             }
+            openMatchOverlay()
         }
 
         document.getElementById('backToRegularViewButton').onclick = function () {
@@ -101,7 +131,7 @@
             //grab the "top card" via jquery
             var transEndEventName = whichTransitionEvent();
             $('#card_0').one(transEndEventName, function(e) {
-                console.log(e.type);
+                //console.log(e.type);
                 if (carousel.isLeftSwipe) {
                     carousel.throwCard(-(carousel.board.clientWidth + carousel.topCard.clientWidth), 30)
                 }
@@ -116,11 +146,11 @@
         source.addEventListener('greeting', function(event) {
             var data =JSON.parse(event.data);
             console.log(data)
-            openMatchOverlay()
+            {#openMatchOverlay()#}
         }, false);
 
         source.addEventListener('error', function(event) {
-            alert("Failed to connect to event stream. Is Redis running?");
+            //alert("Failed to connect to event stream. Is Redis running?");
         }, false);
 
 

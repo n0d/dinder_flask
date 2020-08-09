@@ -17,6 +17,7 @@ scroll-behavior: smooth;
     max-width: 1000px;
     display:inline-block;
     overflow:hidden;
+    font-family: 'Open Sans', sans-serif;
 }
 
 #match-overlay {
@@ -27,10 +28,26 @@ scroll-behavior: smooth;
     left:0;
     bottom:0;
     background-color:rgb(0,0,0);
-    background-color: rgba(0,0,0, 0.7); /* Black w/opacity */
+    background-color: rgba(0,0,0, 0.8); /* Black w/opacity */
     overflow-x: hidden; /* Disable horizontal scroll */
     transition: 0.5s; /* 0.5 second transition effect to slide in or slide down the overlay (height or width, depending on reveal) */
 }
+
+.match-overlay > h1 {
+    color: white;
+    font-size: 5.6em;
+}
+
+#reviewMatchRestaurantButton {
+    color: white;
+    font-size: 5.6em;
+    height:110px;
+    margin-top:15%;
+    background-color: #4ccab8;
+    border-radius:20px;
+    font-weight:100;
+}
+
 
 /* Position the content inside the overlay */
 .match-overlay-content {
@@ -42,11 +59,14 @@ scroll-behavior: smooth;
 }
 
 /* Position the close button (top right corner) */
-.match-overlay .closebtn {
+.match-overlay #closeMatchOverlayButton {
   position: absolute;
-  top: 20px;
-  right: 45px;
-  font-size: 60px;
+  top:2%;
+  right: 0%;
+  font-size: 3em;
+    color:white;
+    opacity:70%;
+
 }
 
 .card {
@@ -85,6 +105,7 @@ p {
 #restaurantInfoOnCard > h1, h2 {
     text-shadow:2px 2px 2px black;
 }
+
 
 
 /*CSS to place the whole image Num Indicator (flex box, fill with individual image indicators */
@@ -138,7 +159,6 @@ p {
     top: calc(91.5%);
     top: -moz-calc(91.5%);
     top: -webkit-calc(91.5%);
-    top: -o-calc(91.5%);
     left: 63%;
     height: 7vh;
     width: 7vh;
