@@ -6,6 +6,18 @@
 {% endblock %}
 
 {% block content %}
+
+    {{ super() }}
+    <div id="accountInfo" class="container">
+        <div class="row  twelve columns">
+            <h2>Your Code: KB76</h2>
+        </div>
+        <div class="row">
+            <h3>To pair up with another user, enter their Code below:</h3>
+        </div>
+        <label for="enterCodeInput">Enter Code</label>
+        <input class="u-full-width" type="email" placeholder="..." id="enterCodeInput">
+    </div>
     <div id="board">
         <div id="backToRegularViewButton"></div>
         <div id="swipeLeftButton"></div>
@@ -38,12 +50,10 @@
         <div id="match-overlay" class="match-overlay">
             <div class="container">
                 <div class="row">
-            <div id="closeMatchOverlayButton" >
-                    <h1>&times;</h1>
-                </div>
+                    <div id="closeMatchOverlayButton" >
+                        <h1><i class="fas fa-times"></i></h1>
                     </div>
-{#            <div id="closebtn"><h1 onclick="document.getElementById('match-overlay').style.height = '0%';">&times;</h1></div>#}
-
+                </div>
                 <div class="row">
                     <h1 style="padding-top: 30%; color: white; font-size: 6em;">You and Bob both like Smokin' Oak!</h1>
                 </div>
@@ -65,6 +75,33 @@
     {{ super() }}
     <script type="text/javascript">
 
+        function switchToSwipeView() {
+            history.back()
+            isAccountView = false
+            document.getElementById('board').style.display = 'block';
+            document.getElementById('accountInfo').style.display = 'none';
+
+            //change button opacity to show selection
+            document.getElementById('navBarAccountSettingsScreenButton').style.opacity = '25%';
+            document.getElementById('navBarSwipeScreenButton').style.opacity = '80%';
+        }
+
+        document.getElementById('navBarAccountSettingsScreenButton').onclick = function () {
+            window.history.pushState({url:'account', title:'account'}, 'account', 'account')
+            isAccountView = true
+            document.getElementById('board').style.display = 'none';
+            document.getElementById('accountInfo').style.display = 'block';
+
+            //change button opacity to show selection
+            document.getElementById('navBarSwipeScreenButton').style.opacity = '25%';
+            document.getElementById('navBarAccountSettingsScreenButton').style.opacity = '80%';
+        }
+
+        document.getElementById('navBarSwipeScreenButton').onclick = function () {
+            //switch back from account view
+            switchToSwipeView()
+        }
+
         // close match overlay if "keep swiping" or if upper right X is pressed.
          document.getElementById('keepSwipingButton').onclick = function () {
             document.getElementById('match-overlay').style.height = "0%";
@@ -80,6 +117,8 @@
 
         let board = document.querySelector('#board')
         let carousel = new Carousel(board)
+
+        let isAccountView = false
 
         //listeners for swipe left/right buttons. history.back() executes the popstate listener below (calls shrinkInfo).
         document.getElementById('swipeLeftButton').onclick = function () {
@@ -126,36 +165,42 @@
         //called when 1) hitting back button (only applicable when the app is in the /info state, or the info view) or when hitting the "back to regular view" button,
         // or 2) when the swipe right/left button is selected. if in the info view, history.back() is called, which triggers the popstate event listener below.
         window.addEventListener('popstate', function (e) {
-            //shrink the view back to regular swipe view. includes some transitions
-            carousel.shrinkInfo()
-            //grab the "top card" via jquery
-            var transEndEventName = whichTransitionEvent();
-            $('#card_0').one(transEndEventName, function(e) {
-                //console.log(e.type);
-                if (carousel.isLeftSwipe) {
-                    carousel.throwCard(-(carousel.board.clientWidth + carousel.topCard.clientWidth), 30)
-                }
-                else if (carousel.isRightSwipe) {
-                    carousel.throwCard(carousel.board.clientWidth, 0)
-                }
-            });
+            if (isAccountView) {
+                switchToSwipeView()
+            }
+            else {
+                //shrink the view back to regular swipe view. includes some transitions
+                carousel.shrinkInfo()
+                //grab the "top card" via jquery
+                var transEndEventName = whichTransitionEvent();
+                $('#card_0').one(transEndEventName, function (e) {
+                    //console.log(e.type);
+                    if (carousel.isLeftSwipe) {
+                        carousel.throwCard(-(carousel.board.clientWidth + carousel.topCard.clientWidth), 30)
+                    } else if (carousel.isRightSwipe) {
+                        carousel.throwCard(carousel.board.clientWidth, 0)
+                    }
+                });
+            }
         });
-
-        var source = new EventSource("{{ url_for('sse.stream') }}");
-
-        source.addEventListener('greeting', function(event) {
-            var data =JSON.parse(event.data);
-            console.log(data)
-            {#openMatchOverlay()#}
-        }, false);
-
-        source.addEventListener('error', function(event) {
-            //alert("Failed to connect to event stream. Is Redis running?");
-        }, false);
-
 
         function openMatchOverlay() {
             document.getElementById('match-overlay').style.height = "100%";
         }
+
+      //  var source = new EventSource("{{ url_for('sse.stream') }}");
+
+     //   source.addEventListener('greeting', function(event) {
+      //      var data =JSON.parse(event.data);
+       //     console.log(data)
+            {#openMatchOverlay()#}
+       // }, false);
+
+       // source.addEventListener('error', function(event) {
+            //alert("Failed to connect to event stream. Is Redis running?");
+        //}, false);
+
+
+
     </script>
 {% endblock %}

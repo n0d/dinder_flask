@@ -115,6 +115,9 @@ class Carousel {
         //show button to go back to regular view
         document.getElementById('backToRegularViewButton').style.display = 'block'
         document.getElementById('backToRegularViewButton').style.pointerEvents = 'auto'
+
+        //hide top navbar icons
+        document.getElementById('navBarTop').style.display = 'none'
     }
 
     /*
@@ -141,8 +144,8 @@ class Carousel {
         // apply rotation around Y axis
         //*note* need to change height and top to line up image at top of the screen.
         this.topCard.style.width = '97%'
-        this.topCard.style.height = '80%'
-        this.topCard.style.top = '50%' //puts the topCard at the top of the screen.
+        this.topCard.style.height = '89%'
+        this.topCard.style.top = '45%' //puts the topCard at the top of the screen.
         this.topCard.style.borderRadius = '2%'
         this.topCard.style.boxShadow = '0px 4px 4px 0px rgba(0, 0, 0, 0.1), 0px -500px 100px -100px rgba(0, 0, 0, .3) inset, 0px 150px 100px -100px rgba(0, 0, 0, 0.12) inset;'
 
@@ -151,6 +154,9 @@ class Carousel {
 
         //hide button when back in regular view
         document.getElementById('backToRegularViewButton').style.display = 'none'
+
+        //show top navbar icons
+        document.getElementById('navBarTop').style.display = 'block'
     }
 
     throwCard (posX, deg) {
@@ -329,35 +335,6 @@ class Carousel {
                     'translateX(-50%) translateY(-50%) rotate(0deg) rotateY(0deg) scale(0.95)'
             }
         }
-    }
-
-    onPanInfoView(e) {
-         // console.log("panning info view...");
-        if (!this.isPanning) {
-
-            this.isPanning = true
-            let style = window.getComputedStyle(board)
-            let mx = style.transform.match(/^matrix\((.+)\)$/)
-            this.startPosX = mx ? parseFloat(mx[1].split(', ')[4]) : 0
-            this.startPosY = mx ? parseFloat(mx[1].split(', ')[5]) : 0
-        }
-
-        let posY = e.deltaY + this.startPosY
-
-        // get ratio between swiped pixels and the axes
-        let propY = e.deltaY / board.clientHeight
-
-        let dirY = e.deltaY < 0 ? -1 : 1
-        if (dirY === -1) {
-            console.log('panning up')
-        }
-        else {
-            console.log('panning down')
-        }
-
-         if (e.isFinal) {
-             console.log('done panning')
-         }
     }
 
     push() {
