@@ -51,7 +51,7 @@ manager.add_command("shell", Shell(make_context=make_shell_context))
 # manager.add_command('db', MigrateCommand)
 # port = int(os.environ.get('PORT', 5000))
 # server = Server(host="0.0.0.0", port=port, processes=4)
-manager.add_command('waitress', serve(app))
+manager.add_command('waitress', serve(app, host='0.0.0.0', port=8080))
 #manager.add_command('gunicorn', GunicornServer())
 
 if __name__ == '__main__':

@@ -13,6 +13,11 @@ def info():
     return redirect('/')
 
 
+@main.route('/account', methods=['GET'])
+def account():
+    return redirect('/')
+
+
 @main.route('/hello')
 def publish_hello():
     sse.publish({"message": "Hello!"}, type='greeting')
