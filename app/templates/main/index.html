@@ -5,77 +5,78 @@
     <script src="{{ url_for('static', filename='js/carousel.js') }}"></script>
 {% endblock %}
 
-{% block content %}
 
-    {{ super() }}
-    <div id="accountInfo" class="container">
-        <div class="row  twelve columns">
-            <h2>Your Code: KB76</h2>
-        </div>
-        <div class="row " style="padding-top: 20%;">
-            <h3 class="u-pull-left">To pair up with another user, enter their Code below:</h3>
-
-            <input style="height:5%; margin-left:0" class="columns six" type="text" placeholder="..." id="enterCodeInput">
-        </div>
-        <div class="row">
-            <input class="button-primary" type="submit" value="Submit">
-        </div>
-    </div>
-    <div class="row">
-
-    </div>
-    <div id="board">
-        <div id="backToRegularViewButton"></div>
-        <div id="swipeLeftButton"></div>
-        <div id="swipeRightButton"></div>
-
-        <div id="restaurantInfoBelowCard" class="container ">
-            <h1 >
-                Smokin' Oak
-            </h1>
-            <h2>
-                <span class="fa fa-star checked"></span>
-                <span class="fa fa-star checked"></span>
-                <span class="fa fa-star checked"></span>
-                <span class="fa fa-star checked"></span>
-                <span class="fa fa-star"></span>
-            </h2>
-            <p>
-                <span style="color:gray"><i class="fas fa-dollar-sign"></i><i class="fas fa-dollar-sign"></i></span>  Barbecue Restaurant
-            </p>
-            <p>
-                <i class="fas fa-map-marker-alt"></i> 4 miles away
-            </p>
-            <p>
-                Laid-back stop for Texas-style BBQ meats smoked on-site & hearty sides plus catering & a full bar.
-            </p>
-            {# extra space at the bottom of the screen to display swipe left/right buttons cleanly without overlapping the text. #}
-            <h1 style="visibility: hidden">1</h1>
-            <h1 style="visibility: hidden">1</h1>
-        </div>
-        <div id="match-overlay" class="match-overlay">
-            <div class="container">
+    {% block page_content %}
+        <div id="accountInfo">
+            <div class="row accountInfoItem"  >
+                <div class="nine columns">
+                    <h2>Your Code:</h2>
+                </div>
+                <div class="three columns">
+                    <h2>KB76</h2>
+                </div>
+            </div>
+            <div class="accountInfoItem">
                 <div class="row">
-                    <div id="closeMatchOverlayButton" >
-                        <h1><i class="fas fa-times"></i></h1>
-                    </div>
+                    <h2>Enter Code below to pair: </h2>
                 </div>
                 <div class="row">
-                    <h1 style="padding-top: 30%; color: white; font-size: 6em;">You and Bob both like Smokin' Oak!</h1>
-                </div>
-                <img class="u-max-full-width" style="border-radius: 50%; margin-top:12%; border: 5px solid #bbb" src="https://picsum.photos/600/?random=" + Math.round(Math.random() * 1000000)>
-                <div  class="row" >
-                    <button id="reviewMatchRestaurantButton">See More</button>
-                </div>
-                <div id="keepSwipingButton" class="row" >
-                    <h2 style="padding-top:5%; color:white; font-size:4em; opacity:70%;">Keep swiping</h2>
+                    <input class="columns six" type="text" placeholder="..." id="enterCodeInput">
+                    <input class="button-primary columns six" type="submit" value="Submit">
                 </div>
             </div>
         </div>
-    </div>
+        <div id="board" >
+            <div id="backToRegularViewButton"></div>
+            <div id="swipeLeftButton"></div>
+            <div id="swipeRightButton"></div>
 
+            <div id="restaurantInfoBelowCard" class="container ">
+                <h1 >
+                    Smokin' Oak
+                </h1>
+                <h2>
+                    <span class="fa fa-star checked"></span>
+                    <span class="fa fa-star checked"></span>
+                    <span class="fa fa-star checked"></span>
+                    <span class="fa fa-star checked"></span>
+                    <span class="fa fa-star"></span>
+                </h2>
+                <p>
+                    <span style="color:gray"><i class="fas fa-dollar-sign"></i><i class="fas fa-dollar-sign"></i></span>  Barbecue Restaurant
+                </p>
+                <p>
+                    <i class="fas fa-map-marker-alt"></i> 4 miles away
+                </p>
+                <p>
+                    Laid-back stop for Texas-style BBQ meats smoked on-site & hearty sides plus catering & a full bar.
+                </p>
+                {# extra space at the bottom of the screen to display swipe left/right buttons cleanly without overlapping the text. #}
+                <h1 style="visibility: hidden">1</h1>
+                <h1 style="visibility: hidden">1</h1>
+            </div>
+            <div id="match-overlay" class="match-overlay">
+                <div class="container">
+                    <div class="row">
+                        <div id="closeMatchOverlayButton" >
+                            <h1><i class="fas fa-times"></i></h1>
+                        </div>
+                    </div>
+                    <div id="matchMessage" class="row">
+                        <h1>You and Bob both like Smokin' Oak!</h1>
+                    </div>
+                    <img class="u-max-full-width" src="https://picsum.photos/600/?random=" + Math.round(Math.random() * 1000000)>
+                    <div  class="row" >
+                        <button id="reviewMatchRestaurantButton">See More</button>
+                    </div>
+                    <div id="keepSwipingButton" class="row" >
+                        <h1 >Keep swiping</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endblock %}
 
-{% endblock %}
 
 {% block scripts %}
     {{ super() }}
@@ -84,6 +85,10 @@
         function switchToSwipeView() {
             history.back()
             isAccountView = false
+
+            document.getElementById('navBarAccountSettingsScreenButton').style.pointerEvents = 'auto';
+            document.getElementById('navBarSwipeScreenButton').style.pointerEvents = 'none';
+
             document.getElementById('board').style.display = 'block';
             document.getElementById('accountInfo').style.display = 'none';
 
@@ -95,6 +100,10 @@
         document.getElementById('navBarAccountSettingsScreenButton').onclick = function () {
             window.history.pushState({url:'account', title:'account'}, 'account', 'account')
             isAccountView = true
+
+            document.getElementById('navBarAccountSettingsScreenButton').style.pointerEvents = 'none';
+            document.getElementById('navBarSwipeScreenButton').style.pointerEvents = 'auto';
+
             document.getElementById('board').style.display = 'none';
             document.getElementById('accountInfo').style.display = 'block';
 

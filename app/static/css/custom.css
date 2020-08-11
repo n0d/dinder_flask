@@ -4,21 +4,16 @@ body {
     height: 100%;
     margin: 0;
     padding: 0;
-
     scroll-behavior: smooth;
     touch-action: manipulation;
     font-family: 'Open Sans', sans-serif;
 }
 
-#board {
-    width: 100%;
-    height: 91%;
-    position: relative;
-    background-color: rgb(245, 247, 250);
-    max-width: 1000px;
-    display:inline-block;
-    overflow:hidden;
-    text-align: center;
+/*override skeleton.css container class
+*/
+.container {
+    width:100%;
+    max-width:960px;
 }
 
 #navBarAccountSettingsScreenButton {
@@ -33,19 +28,93 @@ body {
     padding-left:5%;
     font-size:1.5em;
     opacity:80%;
+    pointer-events: none;
 }
 
-input[type="text"]
-{
-    font-size:3.5em;
+#navBarTop {
+    text-align: center;
+}
+#navBarTop h1 {
+    font-size:4vh;
+}
+
+#board {
+    width: 100%;
+    height: 91%;
+    position: relative;
+    background-color: rgb(245, 247, 250);
+    max-width: 1000px;
+    display:inline-block;
+    /*overflow:hidden;*/
+    text-align: center;
+}
+
+#board h1 {
+    font-size:3vh;
+    word-wrap:break-word;
+}
+
+#board h2 {
+    font-size:2.5vh;
+}
+
+#board p {
+    font-size: 2.5vh;
+    margin-bottom:1rem;
+}
+
+/* ACCOUNT PAGE */
+#accountInfo {
+    display:none;
+    height:89%;
+    padding:1px;
+    padding-left:3%;
+    padding-right:3%;
+    background-color: rgb(245, 247, 250);
+}
+
+.accountInfoItem {
+    margin-top: 3vh;
+    border: 3px solid gray;
+    padding-top:1vh;
+    padding-left:1vh;
+    border-radius:2vh;
+    background-color:white
+}
+
+#accountInfo h1 {
+    font-size:3vh;
+}
+
+#accountInfo h2 {
+    font-size:2.5vh;
+}
+
+#accountInfo h3 {
+    font-size:2vh;
 }
 
 #accountInfo .button-primary {
     height:5%;
     width: 35%;
-    font-size:3.5em;
+    font-size:2.5vh;
+    border-radius:3vh;
+    background-color:darkturquoise;
+    margin-left:4.5vh;
 }
 
+input[type="text"]
+{
+    height:5%;
+    margin-left:0;
+    font-size:2.5vh;
+    border-radius: 3vh;
+    padding-left:2vh;
+    resize:none;
+}
+
+
+/* "YOU HAVE A MATCH" OVERLAY */
 #match-overlay {
     height:0;
     width:100%;
@@ -54,26 +123,23 @@ input[type="text"]
     left:0;
     bottom:0;
     background-color:rgb(0,0,0);
-    background-color: rgba(0,0,0, 0.8); /* Black w/opacity */
+    background-color: rgba(0,0,0, 0.90); /* Black w/opacity */
     overflow-x: hidden; /* Disable horizontal scroll */
     transition: 0.5s; /* 0.5 second transition effect to slide in or slide down the overlay (height or width, depending on reveal) */
 }
 
-.match-overlay > h1 {
+#match-overlay h1 {
     color: white;
-    font-size: 5.6em;
+    font-size: 3vh;
+    padding-top: 30px;
 }
 
-#reviewMatchRestaurantButton {
-    color: white;
-    font-size: 5.6em;
-    height:110px;
-    margin-top:15%;
-    background-color: #4ccab8;
-    border-radius:20px;
-    font-weight:100;
+#match-overlay img {
+    border-radius: 50%;
+    margin-top:8vh;
+    border: 5px solid #bbb;
+    width: 30vh;
 }
-
 
 /* Position the content inside the overlay */
 .match-overlay-content {
@@ -84,8 +150,12 @@ input[type="text"]
   margin-top: 30px; /* 30px top margin to avoid conflict with the close button on smaller screens */
 }
 
+#matchMessage {
+    padding-top:18vh;
+}
+
 /* Position the close button (top right corner) */
-.match-overlay #closeMatchOverlayButton {
+#closeMatchOverlayButton {
   position: absolute;
   top:5%;
   right: 0%;
@@ -95,6 +165,25 @@ input[type="text"]
 
 }
 
+#match-overlay #keepSwipingButton {
+    color:white;
+    font-size:4em;
+    opacity:70%;
+}
+
+/* "SEE MORE" LINK TO GOOGLE PAGE */
+#reviewMatchRestaurantButton {
+    color: white;
+    font-size: 3vh;
+    height:5vh;
+    margin-top:10vh;
+    background-color: #4ccab8;
+    border-radius:20px;
+    font-weight:100;
+}
+
+
+/* SWIPE CARD */
 .card {
     width: 97%; /* update in carousel.js shrinkInfo*/
     height: 89%; /* update in carousel.js shrinkInfo*/
@@ -113,27 +202,6 @@ input[type="text"]
     color:whitesmoke;
 }
 
-#board h1 {
-    font-size:3.8em;
-    word-wrap:break-word;
-}
-
-#board h2 {
-    font-size:2.8em;
-}
-
-#navBarTop {
-    text-align: center;
-}
-#navBarTop h1 {
-    font-size:3.8em;
-}
-
-#board p {
-    font-size: 2.8em;
-    margin-bottom:1rem;
-}
-
 /*text shadow inside card*/
 #restaurantInfoOnCard  h1  {
     text-shadow:2px 2px 2px black;
@@ -142,25 +210,6 @@ input[type="text"]
 #restaurantInfoOnCard h2 {
     text-shadow:2px 2px 2px black;
 }
-
-#accountInfo {
-    display:none;
-    top: 5%;
-    width:100%;
-    height:91%;
-    padding-top:5%;
-    padding-left:3%;
-    background-color: rgb(245, 247, 250);
-}
-
-#accountInfo h2 {
-    font-size:5em;
-}
-
-#accountInfo h3 {
-    font-size:3.6em;
-}
-
 
 /*CSS to place the whole image Num Indicator (flex box, fill with individual image indicators */
 .imageNumIndicator {
@@ -247,7 +296,7 @@ input[type="text"]
 
 #restaurantName {
     position: absolute;
-    bottom:15%;
+    bottom:13%;
     left:3%;
     width:100%;
     height:75px;
@@ -258,7 +307,7 @@ input[type="text"]
 #restaurantRating {
     position: absolute;
     bottom:8%;
-    left:2.5%;
+    left:2%;
     width:100%;
     height:75px;
     color:white;
@@ -303,4 +352,3 @@ input[type="text"]
     text-align:left;
     display:none;
 }
-

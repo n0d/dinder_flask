@@ -7,7 +7,8 @@
     <title>Dinder</title>
     <meta name="description" content="">
     <meta name="author" content="">
-{#    <meta name="viewport" content="width=device-width, initial-scale=1">#}
+    <meta http-equiv="ScreenOrientation" content="autoRotate:disabled">
+    <meta name="viewport" content= "user-scalable=no">
 
     <!-- FONT
     –––––––––––––––––––––––––––––––––––––––––––––––––– -->
@@ -21,6 +22,8 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/skeleton/normalize.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/skeleton/skeleton.css') }}">
 
+
+
     <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/custom.css') }}">
 
@@ -32,7 +35,8 @@
 
 
 {% block content %}
-    <div id="navBarTop" class="container">
+    <div class="container">
+    <div id="navBarTop" >
             <div class="row">
                 <div id="navBarAccountSettingsScreenButton" class="six columns">
                     <h1><i class="far fa-user-circle"></i></h1>
@@ -42,6 +46,10 @@
                 </div>
             </div>
         </div>
+    {% block page_content %}
+
+    {% endblock %}
+    </div>
 {% endblock %}
 
 
