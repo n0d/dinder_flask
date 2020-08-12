@@ -8,12 +8,17 @@
 
     {% block page_content %}
         <div id="accountInfo">
+        <div class="row accountInfoItem" style="border: 1px solid red;" >
+                <div class="twelve columns" >
+                    <h2>Not paired up with anyone.</h2>
+                </div>
+            </div>
             <div class="row accountInfoItem"  >
                 <div class="nine columns">
                     <h2>Your Code:</h2>
                 </div>
                 <div class="three columns">
-                    <h2>KB76</h2>
+                    <h2>{{ user_code }}</h2>
                 </div>
             </div>
             <div class="accountInfoItem">
@@ -22,7 +27,7 @@
                 </div>
                 <div class="row">
                     <input class="columns six" type="text" placeholder="..." id="enterCodeInput">
-                    <input class="button-primary columns six" type="submit" value="Submit">
+                    <input class="button-primary columns six" type="submit" value="Pair">
                 </div>
             </div>
         </div>

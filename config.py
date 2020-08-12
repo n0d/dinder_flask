@@ -1,12 +1,21 @@
 import os
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')
-    REDIS_URL = os.environ.get('REDIS_URL')
-
+    SESSION_TYPE = os.environ.get('SESSION_TYPE')
+    SESSION_SQLALCHEMY_TABLE = os.environ.get('SESSION_SQLALCHEMY_TABLE')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI')
+    DEBUG = True
     SSL_REDIRECT = False
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    @classmethod
+    def init_app(cls, app):
+        pass
 
 
 class DevelopmentConfig(Config):
@@ -28,6 +37,7 @@ class ProductionConfig(Config):
     def init_app(cls, app):
         pass
 
+
 class HerokuConfig(ProductionConfig):
     # only ssl redirect if running on herokus server (rather than local testing).
     DEBUG = False
@@ -47,7 +57,7 @@ class HerokuConfig(ProductionConfig):
 
 
 config = {
-    'dev': DevelopmentConfig,
+    'dev': Config,
     'prod': ProductionConfig,
     'heroku': HerokuConfig,
     'default': DevelopmentConfig

@@ -75,7 +75,7 @@ body {
 
 .accountInfoItem {
     margin-top: 3vh;
-    border: 3px solid gray;
+    border: 1px solid gray;
     padding-top:1vh;
     padding-left:1vh;
     border-radius:2vh;
@@ -130,7 +130,7 @@ input[type="text"]
 
 #match-overlay h1 {
     color: white;
-    font-size: 3vh;
+    font-size: 3.5vh;
     padding-top: 30px;
 }
 
@@ -143,11 +143,11 @@ input[type="text"]
 
 /* Position the content inside the overlay */
 .match-overlay-content {
-  position: relative;
-  top: 25%; /* 25% from the top */
-  width: 100%; /* 100% width */
-  text-align: center; /* Centered text/links */
-  margin-top: 30px; /* 30px top margin to avoid conflict with the close button on smaller screens */
+    position: relative;
+    top: 25%; /* 25% from the top */
+    width: 100%; /* 100% width */
+    text-align: center; /* Centered text/links */
+    margin-top: 30px; /* 30px top margin to avoid conflict with the close button on smaller screens */
 }
 
 #matchMessage {
@@ -156,13 +156,12 @@ input[type="text"]
 
 /* Position the close button (top right corner) */
 #closeMatchOverlayButton {
-  position: absolute;
-  top:5%;
-  right: 0%;
-  font-size: 2em;
+    position: absolute;
+    top:5%;
+    right: 5%;
+    font-size: 2em;
     color:white;
     opacity:70%;
-
 }
 
 #match-overlay #keepSwipingButton {

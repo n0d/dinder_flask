@@ -1,23 +1,27 @@
 import os
 from dotenv import load_dotenv
-from app import create_app, db
+from app import create_app, db, sess
 from flask_script import Manager, Shell, Server, Option, Command
 from flaskext.markdown import Markdown
 from waitress import serve
+from flask_migrate import Migrate, MigrateCommand
 import subprocess
+
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'dev')
 manager = Manager(app)
+migrate = Migrate(app, db)
 Markdown(app)
 
 
 def make_shell_context():
     return dict(
         app=app,
-        db=db)
+        db=db,
+        sess=sess)
 
 
 class GunicornServer(Command):
@@ -48,11 +52,14 @@ class GunicornServer(Command):
 
 
 manager.add_command("shell", Shell(make_context=make_shell_context))
-# manager.add_command('db', MigrateCommand)
-# port = int(os.environ.get('PORT', 5000))
-# server = Server(host="0.0.0.0", port=port, processes=4)
-manager.add_command('waitress', serve(app, host='0.0.0.0', port=8080))
+manager.add_command('db', MigrateCommand)
+
+# manager.add_command('waitress', serve(app, host='0.0.0.0', port=8080))
 #manager.add_command('gunicorn', GunicornServer())
+
+port = int(os.environ.get('PORT', 5000))
+server = Server(host="0.0.0.0", port=port)
+manager.add_command('runserver', server)
 
 if __name__ == '__main__':
     manager.run()
