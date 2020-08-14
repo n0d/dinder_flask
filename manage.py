@@ -5,6 +5,7 @@ from flask_script import Manager, Shell, Server, Option, Command
 from flaskext.markdown import Markdown
 from waitress import serve
 from flask_migrate import Migrate, MigrateCommand
+from app.models import User, UserPlace
 import subprocess
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -21,6 +22,12 @@ def make_shell_context():
     return dict(
         app=app,
         db=db,
+
+        #db models
+        User=User,
+        UserPlace=UserPlace,
+
+        #flask-session
         sess=sess)
 
 

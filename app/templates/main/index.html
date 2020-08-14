@@ -18,7 +18,7 @@
                     <h2>Your Code:</h2>
                 </div>
                 <div class="three columns">
-                    <h2>{{ user_code }}</h2>
+                    <h2>{{ user_pairing_code }}</h2>
                 </div>
             </div>
             <div class="accountInfoItem">
@@ -220,7 +220,24 @@
             //alert("Failed to connect to event stream. Is Redis running?");
         //}, false);
 
+        //the first time a user goes to the site, a session cookie is created.
+        //flask-session inserts an entry into t_session, and the main view fxn returns index.html.
+        //this page sends a post request to check if the corresponding entry in t_user has been created,
+        //if not, then it creates it.
+        $.ajax({
+            type: "POST",
+            url: "/create_user_if_not_exists",
 
+            data: "",
+            contentType:"application/json; charset=utf-8",
+            dataType: "json",
+            success: function(result) {
+                console.log(result);
+            },
+            error: function(result) {
+                console.log(result);
+            },
+        });
 
     </script>
 {% endblock %}
