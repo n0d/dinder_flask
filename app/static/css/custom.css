@@ -45,7 +45,6 @@ body {
     background-color: rgb(245, 247, 250);
     max-width: 1000px;
     display:inline-block;
-    /*overflow:hidden;*/
     text-align: center;
 }
 
@@ -114,8 +113,8 @@ input[type="text"]
 }
 
 
-/* "YOU HAVE A MATCH" OVERLAY */
-#match-overlay {
+/* OVERLAY for "You have a match" and "user would like to pair with you"*/
+.overlay {
     height:0;
     width:100%;
     position:fixed;
@@ -128,13 +127,13 @@ input[type="text"]
     transition: 0.5s; /* 0.5 second transition effect to slide in or slide down the overlay (height or width, depending on reveal) */
 }
 
-#match-overlay h1 {
+.overlay h1 {
     color: white;
     font-size: 3.5vh;
     padding-top: 30px;
 }
 
-#match-overlay img {
+.overlay img {
     border-radius: 50%;
     margin-top:8vh;
     border: 5px solid #bbb;
@@ -142,7 +141,7 @@ input[type="text"]
 }
 
 /* Position the content inside the overlay */
-.match-overlay-content {
+.overlay-content {
     position: relative;
     top: 25%; /* 25% from the top */
     width: 100%; /* 100% width */
@@ -150,7 +149,7 @@ input[type="text"]
     margin-top: 30px; /* 30px top margin to avoid conflict with the close button on smaller screens */
 }
 
-#matchMessage {
+.overlayMessage {
     padding-top:18vh;
 }
 
@@ -164,23 +163,28 @@ input[type="text"]
     opacity:70%;
 }
 
-#match-overlay #keepSwipingButton {
+.overlay .noText {
     color:white;
     font-size:4em;
     opacity:70%;
 }
 
-/* "SEE MORE" LINK TO GOOGLE PAGE */
-#reviewMatchRestaurantButton {
+.overlayAcceptButton {
     color: white;
     font-size: 3vh;
     height:5vh;
-    margin-top:10vh;
     background-color: #4ccab8;
     border-radius:20px;
     font-weight:100;
 }
 
+#reviewMatchRestaurantButton {
+    margin-top: 10vh;
+}
+
+#acceptPairButton {
+    margin-top: 44vh;
+}
 
 /* SWIPE CARD */
 .card {
@@ -352,68 +356,3 @@ input[type="text"]
     display:none;
 }
 
-
-/* MODAL */
- .modal {
-	 position: fixed;
-	 left: 0;
-	 top: 0;
-	 right: 0;
-	 bottom: 0;
-	 background-color: rgba(0, 0, 0, 0.65);
-	 visibility: hidden;
-	 backface-visibility: hidden;
-	 opacity: 0;
-	 transition: opacity 0.15s ease-in-out;
-}
- .modal.modal-open {
-	 visibility: visible;
-	 backface-visibility: visible;
-	 opacity: 1;
-	 z-index: 1;
-}
- .modal .modal-inner {
-	 position: relative;
-	 height: 100%;
-	 display: flex;
-	 flex-direction: column;
-	 justify-content: center;
-	 align-items: center;
-}
- .modal .modal-inner .modal-content {
-	 background-color: white;
-	 max-width: 35em;
-	 padding: 1em 1.5em;
-	 position: relative;
-	 margin: 2em;
-	 box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.35);
-}
- .modal .modal-inner .modal-content .modal-close-icon {
-	 position: absolute;
-	 right: 1.5em;
-}
- .modal .modal-inner .modal-content .modal-content-inner {
-	 padding-right: 2em;
-}
- .modal .modal-inner .modal-content .modal-content-inner h1, .modal .modal-inner .modal-content .modal-content-inner h2, .modal .modal-inner .modal-content .modal-content-inner h3, .modal .modal-inner .modal-content .modal-content-inner h4, .modal .modal-inner .modal-content .modal-content-inner h5, .modal .modal-inner .modal-content .modal-content-inner h6 {
-	 margin-bottom: 0.25em;
-}
- .modal .modal-inner .modal-content .modal-content-inner p {
-	 margin-bottom: 1em;
-}
- .modal .modal-inner .modal-content .modal-buttons-seperator {
-	 margin: 1.5em 0;
-	 margin-top: 0;
-}
- .modal .modal-inner .modal-content .modal-buttons {
-	 display: flex;
-	 flex-direction: row;
-	 justify-content: flex-end;
-	 align-items: center;
-}
- .modal .modal-inner .modal-content .modal-buttons button {
-	 margin-left: 1em;
-}
- .modal .modal-inner .modal-content .modal-buttons button:first-child {
-	 margin-left: 0;
-}

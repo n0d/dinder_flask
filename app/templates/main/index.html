@@ -27,7 +27,7 @@
                 </div>
                 <div class="row">
                     <input class="columns six" type="text" placeholder="..." id="enterCodeInput">
-                    <input class="button-primary columns six" type="submit" value="Pair">
+                    <input id="submitPairCodeRequest" class="button-primary columns six" type="submit" value="Pair">
                 </div>
             </div>
         </div>
@@ -60,25 +60,44 @@
                 <h1 style="visibility: hidden">1</h1>
                 <h1 style="visibility: hidden">1</h1>
             </div>
-            <div id="match-overlay" class="match-overlay">
+            <div id="match-overlay" class="overlay">
                 <div class="container">
                     <div class="row">
                         <div id="closeMatchOverlayButton" >
                             <h1><i class="fas fa-times"></i></h1>
                         </div>
                     </div>
-                    <div id="matchMessage" class="row">
+                    <div id="matchMessage" class="overlayMessage">
                         <h1>You and Bob both like Smokin' Oak!</h1>
                     </div>
                     <img class="u-max-full-width" src="https://picsum.photos/600/?random=" + Math.round(Math.random() * 1000000)>
                     <div  class="row" >
-                        <button id="reviewMatchRestaurantButton">See More</button>
+                        <button class=".overlayAcceptButton" id="reviewMatchRestaurantButton">See More</button>
                     </div>
-                    <div id="keepSwipingButton" class="row" >
+                    <div id="keepSwipingButton" class="row noText" >
                         <h1 >Keep swiping</h1>
                     </div>
                 </div>
             </div>
+            {# Request to pair overlay #}
+            <div id="pair-overlay" class="overlay">
+                    <div class="container">
+{#                        <div class="row">#}
+{#                            <div id="closeMatchOverlayButton" >#}
+{#                                <h1><i class="fas fa-times"></i></h1>#}
+{#                            </div>#}
+{#                        </div>#}
+                        <div id="pairMessage" class="row overlayMessage">
+                            <h1></h1>
+                        </div>
+                        <div  class="row" >
+                            <button class="overlayAcceptButton" id="acceptPairButton">Pair</button>
+                        </div>
+                        <div id="dontPairButton" class="row noText" >
+                            <h1 >Don't Pair</h1>
+                        </div>
+                    </div>
+                </div>
         </div>
     {% endblock %}
 
@@ -155,11 +174,56 @@
             carousel.isRightSwipe = true
             if (carousel.isInfoView) {
                 history.back()
-            }
-            else {
+            } else {
                 carousel.throwCard(carousel.board.clientWidth, 0)
             }
             openMatchOverlay()
+        }
+
+        function ajaxPost() {
+            $.ajax({
+                type: "POST",
+                url: "/pair_request",
+                data: JSON.stringify({
+                    "initial_user_pairing_code":"{{ user_pairing_code }}",
+                    "requested_user_pairing_code":$('#enterCodeInput').val()
+                }),
+                contentType:"application/json; charset=utf-8",
+                dataType: "json",
+                success: function(result) {
+                    console.log(result);
+                },
+                error: function(result) {
+                    console.log(result);
+                },
+            });
+        }
+
+        $('#submitPairCodeRequest').click(function(e) {
+            e.preventDefault()
+            ajaxPost()
+        });
+
+        var acceptPairButtonData = {
+            "user_pairing_code_1":"{{ user_pairing_code }}",
+            "user_pairing_code_2":'get from SSE'
+        }
+
+        document.getElementById('acceptPairButton').onclick = function () {
+            $.ajax({
+                type: "POST",
+                url: "/pair_accept",
+
+                data: JSON.stringify(data),
+                contentType:"application/json; charset=utf-8",
+                dataType: "json",
+                success: function(result) {
+                    console.log(result);
+                },
+                error: function(result) {
+                    console.log(result);
+                },
+            });
         }
 
         document.getElementById('backToRegularViewButton').onclick = function () {
@@ -208,17 +272,17 @@
             document.getElementById('match-overlay').style.height = "100%";
         }
 
-      //  var source = new EventSource("{{ url_for('sse.stream') }}");
+        function openPairOverlay() {
+            $('#pairMessage').find('h1').append('User "' + user_code_requesting + '" requested to pair up!')
+            document.getElementById('pair-overlay').style.height = "100%";
+        }
 
-     //   source.addEventListener('greeting', function(event) {
-      //      var data =JSON.parse(event.data);
-       //     console.log(data)
-            {#openMatchOverlay()#}
-       // }, false);
 
-       // source.addEventListener('error', function(event) {
-            //alert("Failed to connect to event stream. Is Redis running?");
-        //}, false);
+        var user_code_requesting;
+
+       {#source.addEventListener('error', function(event) {#}
+       {#     alert("Failed to connect to event stream. Is Redis running?");#}
+       {# }, false);#}
 
         //the first time a user goes to the site, a session cookie is created.
         //flask-session inserts an entry into t_session, and the main view fxn returns index.html.
@@ -232,6 +296,14 @@
             contentType:"application/json; charset=utf-8",
             dataType: "json",
             success: function(result) {
+                var source = new EventSource("{{ url_for('sse.stream')}}");
+
+                source.addEventListener('pair_request', function(event) {
+                    var data =JSON.parse(event.data);
+                    user_code_requesting = data.user_code_requesting;
+                    console.log(data)
+                    openPairOverlay()
+                }, false);
                 console.log(result);
             },
             error: function(result) {

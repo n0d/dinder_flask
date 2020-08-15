@@ -16,6 +16,7 @@ class User(SurrogatePK, db.Model):
                     session_id=session_id)
         db.session.add(user)
         db.session.commit()
+        return user.user_pairing_code
 
 
 # places that user swiped right on.
