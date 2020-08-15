@@ -150,6 +150,12 @@
          document.getElementById('closeMatchOverlayButton').onclick = function () {
             document.getElementById('match-overlay').style.height = "0%";
          }
+
+         // close pair overlay if "don't pair" or if upper right X is pressed.
+         document.getElementById('dontPairButton').onclick = function () {
+            document.getElementById('pair-overlay').style.height = "0%";
+         }
+
         /* index alternates between 0 and 1, since there are always two buffers of images for preloading. */
         var currImageArrayIndex=0
         var images = []
@@ -204,23 +210,28 @@
             ajaxPost()
         });
 
-        var acceptPairButtonData = {
-            "user_pairing_code_1":"{{ user_pairing_code }}",
-            "user_pairing_code_2":'get from SSE'
-        }
-
         document.getElementById('acceptPairButton').onclick = function () {
             $.ajax({
                 type: "POST",
                 url: "/pair_accept",
 
-                data: JSON.stringify(data),
+                data: JSON.stringify({
+                    "user_pairing_code_1":"{{ user_pairing_code }}",
+                    "user_pairing_code_2":user_code_requesting
+                }),
                 contentType:"application/json; charset=utf-8",
                 dataType: "json",
                 success: function(result) {
+                    $('#pairMessage').find('h1').text('Pairing successful!')
+                    document.getElementById('acceptPairButton').style.visibility='hidden'
+                    document.getElementById('acceptPairButton').style.pointerEvents='none'
+                    document.getElementById('dontPairButton').innerText = 'OK'
+                    {#document.getElementById('pair-overlay').style.height = "0%";#}
                     console.log(result);
                 },
                 error: function(result) {
+                    $('#pairMessage').find('h1').text('').append('Pairing failed, please try again.')
+                    {#document.getElementById('pair-overlay').style.height = "0%";#}
                     console.log(result);
                 },
             });
@@ -273,10 +284,10 @@
         }
 
         function openPairOverlay() {
-            $('#pairMessage').find('h1').append('User "' + user_code_requesting + '" requested to pair up!')
+            //clear previous message and populate pair message.
+            $('#pairMessage').find('h1').text('').append('User "' + user_code_requesting + '" requested to pair up!')
             document.getElementById('pair-overlay').style.height = "100%";
         }
-
 
         var user_code_requesting;
 
@@ -296,7 +307,7 @@
             contentType:"application/json; charset=utf-8",
             dataType: "json",
             success: function(result) {
-                var source = new EventSource("{{ url_for('sse.stream')}}");
+                var source = new EventSource("{{ url_for('sse.stream', channel=user_pairing_code)}}");
 
                 source.addEventListener('pair_request', function(event) {
                     var data =JSON.parse(event.data);

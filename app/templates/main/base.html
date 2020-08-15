@@ -77,34 +77,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script src="https://kit.fontawesome.com/d1e4b8ffd3.js" crossorigin="anonymous"></script>
     <script src="{{ url_for('static', filename='js/jquery/jquery-3.5.1.min.js') }}"></script>
-
-
-    <script type="text/javascript">
-        //modal handling
-        var modal = document.querySelector('.modal');
-        var closeButtons = document.querySelectorAll('.close-modal');
-        // set open modal behaviour
-        document.querySelector('.open-modal').addEventListener('click', function() {
-          modal.classList.toggle('modal-open');
-        });
-        // set close modal behaviour
-        for (i = 0; i < closeButtons.length; ++i) {
-          closeButtons[i].addEventListener('click', function() {
-            modal.classList.toggle('modal-open');
-            });
-        }
-        // close modal if clicked outside content area
-        document.querySelector('.modal-inner').addEventListener('click', function() {
-          modal.classList.toggle('modal-open');
-        });
-        // prevent modal inner from closing parent when clicked
-        document.querySelector('.modal-content').addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-
-
-
-    </script>
 {% endblock %}
 
 
