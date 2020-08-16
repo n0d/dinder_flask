@@ -8,7 +8,7 @@
 
     {% block page_content %}
         <div id="accountInfo">
-        <div class="row accountInfoItem" id="pairedInfo" style="border: 1px solid red;" >
+            <div class="row accountInfoItem" id="pairedInfo" style="border: 1px solid red;" >
                 <div class="twelve columns"  >
                     <h2>Not paired up with anyone.</h2>
                 </div>
@@ -17,8 +17,8 @@
                 <div class="nine columns">
                     <h2>Your Code:</h2>
                 </div>
-                <div class="three columns">
-                    <h2>{{ user_pairing_code }}</h2>
+                <div id="yourCode" class="three columns">
+                    <h2></h2>
                 </div>
             </div>
             <div class="accountInfoItem">
@@ -60,46 +60,48 @@
                 <h1 style="visibility: hidden">1</h1>
                 <h1 style="visibility: hidden">1</h1>
             </div>
-            <div id="match-overlay" class="overlay">
-                <div class="container">
-                    <div class="row">
-                        <div id="closeMatchOverlayButton" >
-                            <h1><i class="fas fa-times"></i></h1>
-                        </div>
+        </div>
+        <div id="match-overlay" class="overlay">
+            <div class="container">
+                <div class="row">
+                    <div id="closeMatchOverlayButton" >
+                        <h1><i class="fas fa-times"></i></h1>
                     </div>
-                    <div id="matchMessage" class="overlayMessage">
-                        <h1>You and Bob both like Smokin' Oak!</h1>
-                    </div>
-                    <img class="u-max-full-width" src="https://picsum.photos/600/?random=" + Math.round(Math.random() * 1000000)>
-                    <div  class="row" >
-                        <button class=".overlayAcceptButton" id="reviewMatchRestaurantButton">See More</button>
-                    </div>
-                    <div id="keepSwipingButton" class="row noText" >
-                        <h1 >Keep swiping</h1>
-                    </div>
+                </div>
+                <div id="matchMessage" class="overlayMessage">
+                    <h1>You and Bob both like Smokin' Oak!</h1>
+                </div>
+                <img class="u-max-full-width" src="https://picsum.photos/600/?random=" + Math.round(Math.random() * 1000000)>
+                <div  class="row" >
+                    <button class=".overlayAcceptButton" id="reviewMatchRestaurantButton">See More</button>
+                </div>
+                <div id="keepSwipingButton" class="row noText" >
+                    <h1 >Keep swiping</h1>
                 </div>
             </div>
-            {# Request to pair overlay #}
-            <div id="pair-overlay" class="overlay">
-                    <div class="container">
-                        <div id="pairMessage" class="row overlayMessage">
-                            <h1></h1>
-                        </div>
-                        <div  class="row" >
-                            <button class="overlayAcceptButton" id="acceptPairButton">Pair</button>
-                        </div>
-                        <div id="dontPairButton" class="row noText" >
-                            <h1 >Don't Pair</h1>
-                        </div>
-                    </div>
-                </div>
         </div>
+        <div id="pair-overlay" class="overlay">
+            <div class="container">
+                <div id="pairMessage" class="row overlayMessage">
+                    <h1></h1>
+                </div>
+                <div  class="row" >
+                    <button class="overlayAcceptButton" id="acceptPairButton">Pair</button>
+                </div>
+                <div id="dontPairButton" class="row noText" >
+                    <h1 >Don't Pair</h1>
+                </div>
+            </div>
+        </div>
+
     {% endblock %}
 
 
 {% block scripts %}
     {{ super() }}
     <script type="text/javascript">
+
+        var user_pairing_code = ''
 
         function switchToSwipeView() {
             history.back()
@@ -186,7 +188,7 @@
                 type: "POST",
                 url: "/pair_request",
                 data: JSON.stringify({
-                    "initial_user_pairing_code":"{{ user_pairing_code }}",
+                    "initial_user_pairing_code":user_pairing_code,
                     "requested_user_pairing_code":$('#enterCodeInput').val()
                 }),
                 contentType:"application/json; charset=utf-8",
@@ -211,7 +213,7 @@
                 url: "/pair_accept",
 
                 data: JSON.stringify({
-                    "user_pairing_code_1":"{{ user_pairing_code }}",
+                    "user_pairing_code_1":user_pairing_code,
                     "user_pairing_code_2":user_code_requesting
                 }),
                 contentType:"application/json; charset=utf-8",
@@ -305,23 +307,26 @@
             contentType:"application/json; charset=utf-8",
             dataType: "json",
             success: function(result) {
+
+                user_pairing_code = result.user_pairing_code
+                $('#yourCode').find('h2').text(user_pairing_code)
                 //if user is matched, set the info box on the account page accordingly.
                 if (result.matched_user_pairing_code) {
                     $('#pairedInfo').find('h2').text('Paired with User "' + result.matched_user_pairing_code + '"')
                     document.getElementById('pairedInfo').style.border = '1px solid gray'
                 }
 
-                var source = new EventSource("{{ url_for('sse.stream', channel=user_pairing_code)}}");
+                var source = new EventSource("{{ url_for('sse.stream')}}" + '?channel=' + user_pairing_code);
 
                 source.onmessage = function(event) {
                     var data =JSON.parse(event.data);
                     if (data.event_name === 'pair_request') {
                         user_code_requesting = data.user_code;
-                        openPairOverlay('User "' + data.user_code + '" requested to pair up!')
+                        openPairOverlay('User "' + data.user_code + '" requested to pair up.')
                     }
                     else if (data.event_name === 'pair_accept') {
                         user_code_accepted = data.user_code;
-                        openPairOverlay('Paired with User "' + data.user_code + '"!')
+                        openPairOverlay('Paired with user "' + data.user_code + '".')
                         document.getElementById('acceptPairButton').style.visibility='hidden'
                         document.getElementById('acceptPairButton').style.pointerEvents='none'
                         document.getElementById('dontPairButton').innerText = 'OK'

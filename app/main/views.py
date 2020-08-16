@@ -1,5 +1,3 @@
-import random
-import string
 import ast
 from flask import render_template, redirect, session, make_response, request, jsonify
 from flask_sse import sse
@@ -11,15 +9,7 @@ from ..models import User
 
 @main.route('/', methods=['GET'])
 def index():
-    # check if user exists.
-    try:
-        # set user's code (random alphanumeric, length 4) to pair w/ other users.
-        user_pairing_code = session['user_pairing_code']
-    except KeyError:
-        random_str = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(4))
-        session['user_pairing_code'] = random_str
-    return render_template("main/index.html",
-                           user_pairing_code=session['user_pairing_code'])
+    return render_template("main/index.html")
 
 
 @main.route('/info', methods=['GET'])
@@ -29,16 +19,26 @@ def info():
 
 @main.route('/create_user_if_not_exists', methods=['POST'])
 def create_user_if_not_exists():
+    # check if user exists
     user = User.query.filter_by(session_id='session:' + session.sid).first()
-    user_matched = ''
+
+    # need to also get user that current user is matched with, if applicable,
+    # since this is viewable on the account page.
+    matched_user_pairing_code = ''
+
+    # insert user if not exists
     if not user:
-        user_pairing_code = User.insert_user(session['user_pairing_code'],
-                                             session_id='session:' + session.sid)
+        user = User.insert_user(session_id='session:' + session.sid)
     else:
-        user_pairing_code = user.user_pairing_code
-        user_matched = User.get_by_id(user.user_id_matched)
-    resp = make_response(jsonify(user_pairing_code=user_pairing_code,
-                                 matched_user_pairing_code=user_matched.user_pairing_code)
+        matched_user = User.get_by_id(user.user_id_matched)
+        if matched_user:
+            matched_user_pairing_code = matched_user.user_pairing_code
+
+    # session variable used throughout app.
+    session['user_pairing_code'] = user.user_pairing_code
+
+    resp = make_response(jsonify(user_pairing_code=session['user_pairing_code'],
+                                 matched_user_pairing_code=matched_user_pairing_code)
                          , 200)
     return resp
 
