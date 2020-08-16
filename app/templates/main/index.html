@@ -8,8 +8,8 @@
 
     {% block page_content %}
         <div id="accountInfo">
-        <div class="row accountInfoItem" style="border: 1px solid red;" >
-                <div class="twelve columns" >
+        <div class="row accountInfoItem" id="pairedInfo" style="border: 1px solid red;" >
+                <div class="twelve columns"  >
                     <h2>Not paired up with anyone.</h2>
                 </div>
             </div>
@@ -26,7 +26,7 @@
                     <h2>Enter Code below to pair: </h2>
                 </div>
                 <div class="row">
-                    <input class="columns six" type="text" placeholder="..." id="enterCodeInput">
+                    <input class="columns six" type="text" style="text-transform: uppercase" placeholder="..." id="enterCodeInput">
                     <input id="submitPairCodeRequest" class="button-primary columns six" type="submit" value="Pair">
                 </div>
             </div>
@@ -82,11 +82,6 @@
             {# Request to pair overlay #}
             <div id="pair-overlay" class="overlay">
                     <div class="container">
-{#                        <div class="row">#}
-{#                            <div id="closeMatchOverlayButton" >#}
-{#                                <h1><i class="fas fa-times"></i></h1>#}
-{#                            </div>#}
-{#                        </div>#}
                         <div id="pairMessage" class="row overlayMessage">
                             <h1></h1>
                         </div>
@@ -226,12 +221,12 @@
                     document.getElementById('acceptPairButton').style.visibility='hidden'
                     document.getElementById('acceptPairButton').style.pointerEvents='none'
                     document.getElementById('dontPairButton').innerText = 'OK'
-                    {#document.getElementById('pair-overlay').style.height = "0%";#}
+                    $('#pairedInfo').find('h2').text('Paired with User "' + user_code_requesting + '"')
+                    document.getElementById('pairedInfo').style.border = '1px solid gray'
                     console.log(result);
                 },
                 error: function(result) {
                     $('#pairMessage').find('h1').text('').append('Pairing failed, please try again.')
-                    {#document.getElementById('pair-overlay').style.height = "0%";#}
                     console.log(result);
                 },
             });
@@ -283,14 +278,17 @@
             document.getElementById('match-overlay').style.height = "100%";
         }
 
-        function openPairOverlay() {
+        function openPairOverlay(message) {
             //clear previous message and populate pair message.
-            $('#pairMessage').find('h1').text('').append('User "' + user_code_requesting + '" requested to pair up!')
+            $('#pairMessage').find('h1').text(message)
+            document.getElementById('acceptPairButton').style.visibility='visible'
+            document.getElementById('acceptPairButton').style.pointerEvents='auto'
+            document.getElementById('dontPairButton').innerText = "Don't Pair"
             document.getElementById('pair-overlay').style.height = "100%";
         }
 
         var user_code_requesting;
-
+        var user_code_accepted;
        {#source.addEventListener('error', function(event) {#}
        {#     alert("Failed to connect to event stream. Is Redis running?");#}
        {# }, false);#}
@@ -307,14 +305,31 @@
             contentType:"application/json; charset=utf-8",
             dataType: "json",
             success: function(result) {
+                //if user is matched, set the info box on the account page accordingly.
+                if (result.matched_user_pairing_code) {
+                    $('#pairedInfo').find('h2').text('Paired with User "' + result.matched_user_pairing_code + '"')
+                    document.getElementById('pairedInfo').style.border = '1px solid gray'
+                }
+
                 var source = new EventSource("{{ url_for('sse.stream', channel=user_pairing_code)}}");
 
-                source.addEventListener('pair_request', function(event) {
+                source.onmessage = function(event) {
                     var data =JSON.parse(event.data);
-                    user_code_requesting = data.user_code_requesting;
+                    if (data.event_name === 'pair_request') {
+                        user_code_requesting = data.user_code;
+                        openPairOverlay('User "' + data.user_code + '" requested to pair up!')
+                    }
+                    else if (data.event_name === 'pair_accept') {
+                        user_code_accepted = data.user_code;
+                        openPairOverlay('Paired with User "' + data.user_code + '"!')
+                        document.getElementById('acceptPairButton').style.visibility='hidden'
+                        document.getElementById('acceptPairButton').style.pointerEvents='none'
+                        document.getElementById('dontPairButton').innerText = 'OK'
+                        $('#pairedInfo').find('h2').text('Paired with User "' + data.user_code + '"')
+                        document.getElementById('pairedInfo').style.border = '1px solid gray'
+                    }
                     console.log(data)
-                    openPairOverlay()
-                }, false);
+                }
                 console.log(result);
             },
             error: function(result) {
