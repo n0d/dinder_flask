@@ -458,8 +458,6 @@ class Carousel {
             imageNumIndicatorTab.style.display='none';
         }
 
-        // card.id = 'card'
-
         card.style.backgroundImage =  "url(" + images[currImageArrayIndex][0].src + ")"
 
         if (this.board.childElementCount === 4) {

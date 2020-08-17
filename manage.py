@@ -5,7 +5,7 @@ from flask_script import Manager, Shell, Server, Option, Command
 from flaskext.markdown import Markdown
 from waitress import serve
 from flask_migrate import Migrate, MigrateCommand
-from app.models import User, UserPlace
+from app.models import User, Place, UserPlace
 import subprocess
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -25,6 +25,7 @@ def make_shell_context():
 
         #db models
         User=User,
+        Place=Place,
         UserPlace=UserPlace,
 
         #flask-session
@@ -61,7 +62,7 @@ class GunicornServer(Command):
 manager.add_command("shell", Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)
 
-manager.add_command('waitress', serve(app, host='0.0.0.0', port=8080, threads=30))
+# manager.add_command('waitress', serve(app, host='0.0.0.0', port=8080, threads=30))
 #manager.add_command('gunicorn', GunicornServer())
 
 # port = int(os.environ.get('PORT', 5000))

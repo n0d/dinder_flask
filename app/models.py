@@ -32,11 +32,30 @@ class User(SurrogatePK, db.Model):
         return user
 
 
+class Place(SurrogatePK, db.Model):
+    __tablename__ = 't_place'
+    gmaps_place_id = db.Column(db.String(255), unique=True)
+    json_string = db.Column(db.String(255))
+    lat = db.Column(db.Float)
+    lng = db.Column(db.Float)
+
+    @staticmethod
+    def insert_place(gmaps_place_id, lat, lng, json_string):
+        place = Place(
+            gmaps_place_id=gmaps_place_id,
+            lat=lat,
+            lng=lng,
+            json_string=json_string
+        )
+        db.session.add(place)
+        db.session.commit()
+
+
 # places that user swiped right on.
 class UserPlace(SurrogatePK, db.Model):
     __tablename__ = 't_user_place'
     user_id = db.Column(db.Integer, db.ForeignKey('t_user.id'), nullable=True)
-    gmaps_place_id = db.Column(db.String(255))
+    gmaps_place_id = db.Column(db.String(255), db.ForeignKey('t_place.gmaps_place_id'))
 
     @staticmethod
     def insert_user_place(user_pairing_code, gmaps_place_id):
@@ -46,3 +65,4 @@ class UserPlace(SurrogatePK, db.Model):
         )
         db.session.add(user_place)
         db.session.commit()
+

@@ -2,9 +2,10 @@ import ast
 from flask import render_template, redirect, session, make_response, request, jsonify
 from flask_sse import sse
 from .. import db
+import requests
 
 from . import main
-from ..models import User
+from ..models import User, Place, UserPlace
 
 
 @main.route('/', methods=['GET'])
@@ -36,6 +37,12 @@ def create_user_if_not_exists():
 
     # session variable used throughout app.
     session['user_pairing_code'] = user.user_pairing_code
+
+    #also set session coordinates
+    data = ast.literal_eval(request.data.decode("utf-8"))
+
+    session['curr_lat'] = str(data.get('curr_lat'))
+    session['curr_lng'] = str(data.get('curr_lng'))
 
     resp = make_response(jsonify(user_pairing_code=session['user_pairing_code'],
                                  matched_user_pairing_code=matched_user_pairing_code)
@@ -97,3 +104,16 @@ def pair_accept():
     else:
         resp = make_response('', 400)
         return resp
+
+
+# user_matched.user_pairing_code
+@main.route('/get_cards', methods=['GET'])
+def get_cards():
+    data = ast.literal_eval(request.data.decode("utf-8"))
+    lat = str(data.get('lat'))
+    lng = str(data.get('lng'))
+    #check places table first
+    r = requests.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + lat + ',' + lng + '&radius=8000&type=restaurant&opennow=true&key=AIzaSyCY0pTbFCWkmkzodJrCs4X8U4Ei81fKPIc')
+    json = r.json()
+    for item in json['results']:
+        pass
