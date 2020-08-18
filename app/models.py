@@ -35,7 +35,7 @@ class User(SurrogatePK, db.Model):
 class Place(SurrogatePK, db.Model):
     __tablename__ = 't_place'
     gmaps_place_id = db.Column(db.String(255), unique=True)
-    json_string = db.Column(db.String(255))
+    json_string = db.Column(db.String(5000))
     lat = db.Column(db.Float)
     lng = db.Column(db.Float)
 

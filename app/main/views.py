@@ -1,9 +1,9 @@
 import ast
-from flask import render_template, redirect, session, make_response, request, jsonify
+from flask import render_template, redirect, session, make_response, request, jsonify, current_app
 from flask_sse import sse
 from .. import db
 import requests
-
+import json
 from . import main
 from ..models import User, Place, UserPlace
 
@@ -107,13 +107,12 @@ def pair_accept():
 
 
 # user_matched.user_pairing_code
-@main.route('/get_cards', methods=['GET'])
+@main.route('/get_cards', methods=['POST'])
 def get_cards():
     data = ast.literal_eval(request.data.decode("utf-8"))
     lat = str(data.get('lat'))
     lng = str(data.get('lng'))
     #check places table first
-    r = requests.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + lat + ',' + lng + '&radius=8000&type=restaurant&opennow=true&key=AIzaSyCY0pTbFCWkmkzodJrCs4X8U4Ei81fKPIc')
-    json = r.json()
-    for item in json['results']:
-        pass
+    r = requests.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + lat + ',' + lng + '&radius=8000&type=restaurant&opennow=true&key=' + current_app.config['GOOGLE_API_KEY'])
+    for item in r.json()['results']:
+        Place.insert_place(item['place_id'], lat, lng, json.dumps(item))

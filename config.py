@@ -8,6 +8,7 @@ class Config:
     SESSION_TYPE = os.environ.get('SESSION_TYPE')
     SESSION_SQLALCHEMY_TABLE = os.environ.get('SESSION_SQLALCHEMY_TABLE')
     SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI')
+    GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
     DEBUG = True
     SSL_REDIRECT = False
 

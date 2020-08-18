@@ -295,11 +295,11 @@
        {#     alert("Failed to connect to event stream. Is Redis running?");#}
        {# }, false);#}
 
-        let cookie_lat = $.cookie("curr_lat");
-        let cookie_lng = $.cookie("curr_lng");
+        {#let cookie_lat = $.cookie("curr_lat");#}
+        {#let cookie_lng = $.cookie("curr_lng");#}
 
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(getPositionSuccess, getPositionError, {timeout:5000});
+            navigator.geolocation.getCurrentPosition(getPositionSuccess, getPositionError);
         } else {
             alert("Geolocation is not supported by this browser.");
         }
@@ -388,7 +388,7 @@
 
         function getCards(lat, lng) {
             $.ajax({
-                type: "GET",
+                type: "POST",
                 url: "/get_cards",
 
                 data: JSON.stringify({
@@ -452,51 +452,5 @@
         {#        console.log(result);#}
         {#    },#}
         {#);#}
-
-
-
-        //populate cards for the user based on location
-        $.ajax({
-            type: "GET",
-            url: "/get_cards",
-
-            data: "",
-            contentType:"application/json; charset=utf-8",
-            dataType: "json",
-            success: function(result) {
-
-                user_pairing_code = result.user_pairing_code
-                $('#yourCode').find('h2').text(user_pairing_code)
-                //if user is matched, set the info box on the account page accordingly.
-                if (result.matched_user_pairing_code) {
-                    $('#pairedInfo').find('h2').text('Paired with User "' + result.matched_user_pairing_code + '"')
-                    document.getElementById('pairedInfo').style.border = '1px solid gray'
-                }
-
-                var source = new EventSource("{{ url_for('sse.stream')}}" + '?channel=' + user_pairing_code);
-
-                source.onmessage = function(event) {
-                    var data =JSON.parse(event.data);
-                    if (data.event_name === 'pair_request') {
-                        user_code_requesting = data.user_code;
-                        openPairOverlay('User "' + data.user_code + '" requested to pair up.')
-                    }
-                    else if (data.event_name === 'pair_accept') {
-                        user_code_accepted = data.user_code;
-                        openPairOverlay('Paired with user "' + data.user_code + '".')
-                        document.getElementById('acceptPairButton').style.visibility='hidden'
-                        document.getElementById('acceptPairButton').style.pointerEvents='none'
-                        document.getElementById('dontPairButton').innerText = 'OK'
-                        $('#pairedInfo').find('h2').text('Paired with User "' + data.user_code + '"')
-                        document.getElementById('pairedInfo').style.border = '1px solid gray'
-                    }
-                    console.log(data)
-                }
-                console.log(result);
-            },
-            error: function(result) {
-                console.log(result);
-            },
-        });
     </script>
 {% endblock %}

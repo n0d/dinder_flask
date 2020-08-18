@@ -62,7 +62,7 @@ class GunicornServer(Command):
 manager.add_command("shell", Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)
 
-# manager.add_command('waitress', serve(app, host='0.0.0.0', port=8080, threads=30))
+manager.add_command('waitress', serve(app, host='0.0.0.0', port=8080, threads=30))
 #manager.add_command('gunicorn', GunicornServer())
 
 # port = int(os.environ.get('PORT', 5000))

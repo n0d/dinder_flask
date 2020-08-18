@@ -24,6 +24,7 @@ def create_app(config_name):
     app.config["SESSION_TYPE"] = os.environ.get('SESSION_TYPE')
     app.config["SESSION_SQLALCHEMY_TABLE"] = os.environ.get('SESSION_SQLALCHEMY_TABLE')
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('SQLALCHEMY_DATABASE_URI')
+    app.config["GOOGLE_API_KEY"] = os.environ.get('GOOGLE_API_KEY')
 
     app.wsgi_app = ProxyFix(app.wsgi_app)
 
