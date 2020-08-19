@@ -1,4 +1,5 @@
 from .database import SurrogatePK
+from sqlalchemy import text
 from . import db
 import random
 import string
@@ -50,6 +51,28 @@ class Place(SurrogatePK, db.Model):
         db.session.add(place)
         db.session.commit()
 
+    # select from existing places in DB locations that are within x miles.
+    # relies on postgres extensions "cube" and "earthdistance".
+    # point function parameters are (longitude, latitude).
+    def get_nearby_place(lat, lng, within_x_miles):
+        sql_str = 'SELECT id, gmaps_place_id, ROUND(CAST(POINT(lng, lat) <@> POINT(-122.6761, 45.6257) AS NUMERIC), 1) as distance, json_string ' \
+                  'FROM t_place tp ' \
+                  'WHERE NOT EXISTS (SELECT 1 FROM t_user_place tup WHERE tup.gmaps_place_id = tp.gmaps_place_id and tup.user_id = 28)' \
+                  'GROUP BY id, gmaps_place_id, lng, lat ' \
+                  'HAVING (point(lng, lat) <@> point(' + str(lng) + ', ' + str(lat) + ')) < ' + str(within_x_miles) + ' ' \
+                              'ORDER BY distance ' \
+                              'LIMIT 1; '
+        resultproxy = db.engine.execute(text(sql_str))
+
+        d = {}
+        result_array = []
+        for rowproxy in resultproxy:
+            # rowproxy.items() returns an array like [(key0, value0), (key1, value1)]
+            for column, value in rowproxy.items():
+                d = {**d, **{column: value}}
+        result_array.append(d)
+        return result_array
+
 
 # places that user swiped right on.
 class UserPlace(SurrogatePK, db.Model):
@@ -65,4 +88,3 @@ class UserPlace(SurrogatePK, db.Model):
         )
         db.session.add(user_place)
         db.session.commit()
-

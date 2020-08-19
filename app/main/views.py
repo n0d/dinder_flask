@@ -2,10 +2,10 @@ import ast
 from flask import render_template, redirect, session, make_response, request, jsonify, current_app
 from flask_sse import sse
 from .. import db
-import requests
 import json
 from . import main
 from ..models import User, Place, UserPlace
+import googlemaps
 
 
 @main.route('/', methods=['GET'])
@@ -38,7 +38,7 @@ def create_user_if_not_exists():
     # session variable used throughout app.
     session['user_pairing_code'] = user.user_pairing_code
 
-    #also set session coordinates
+    # also set session coordinates
     data = ast.literal_eval(request.data.decode("utf-8"))
 
     session['curr_lat'] = str(data.get('curr_lat'))
@@ -106,13 +106,46 @@ def pair_accept():
         return resp
 
 
-# user_matched.user_pairing_code
 @main.route('/get_cards', methods=['POST'])
 def get_cards():
+    gmaps = googlemaps.Client(key=current_app.config['GOOGLE_API_KEY'])
     data = ast.literal_eval(request.data.decode("utf-8"))
     lat = str(data.get('lat'))
     lng = str(data.get('lng'))
-    #check places table first
-    r = requests.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + lat + ',' + lng + '&radius=8000&type=restaurant&opennow=true&key=' + current_app.config['GOOGLE_API_KEY'])
-    for item in r.json()['results']:
-        Place.insert_place(item['place_id'], lat, lng, json.dumps(item))
+    # check places table first
+    place = Place.get_nearby_place(lat, lng, 5)
+    if place:
+        place_json = json.loads(place[0].get('json_string'))
+        return {
+            'distance': str(place[0].get('distance')),
+            'name': place_json['name'],
+            'price_level': place_json['price_level'],
+            'rating': place_json['rating'],
+            'user_ratings_total': place_json['user_ratings_total']
+        }
+    else:
+        # no nearby restaurants in the database. go gather some data from google.
+        # basic idea for how to implement this: return the first two results (need to handle this with the push()
+        # command in carousel.js. So call the /api/place/nearbyserach, loop through the first two and get
+        # details/photos, then make the remaining 18 (or whatever the # is) a celery task. these should be
+        # in the database by the time the user has swiped through a few cards and easy to request.
+        r = gmaps.places_nearby(location=(lat, lng),
+                            open_now=True,
+                                radius=8000,
+                                type='restaurant')
+        for item in r['results']:
+            # merge places API result with details request
+            merged_json = item
+            detail_r = gmaps.place(item['place_id'],
+                                   fields=['formatted_address', 'formatted_phone_number', 'opening_hours', 'photo'])
+
+            detail_item = detail_r['result']
+
+            merged_json['formatted_address'] = detail_item['formatted_address']
+            merged_json['formatted_phone_number'] = detail_item['formatted_phone_number']
+            merged_json['opening_hours'] = detail_item['opening_hours']
+            merged_json['photos'] = detail_item['photos']
+
+            Place.insert_place(item['place_id'], item['geometry']['location']['lat'],
+                               item['geometry']['location']['lng'],
+                               json.dumps(merged_json))
