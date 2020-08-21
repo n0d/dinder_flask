@@ -6,6 +6,8 @@ import json
 from . import main
 from ..models import User, Place, UserPlace
 import googlemaps
+import requests
+from math import floor
 
 
 @main.route('/', methods=['GET'])
@@ -106,27 +108,35 @@ def pair_accept():
         return resp
 
 
-@main.route('/get_cards', methods=['POST'])
-def get_cards():
+@main.route('/get_card', methods=['POST'])
+def get_card():
     gmaps = googlemaps.Client(key=current_app.config['GOOGLE_API_KEY'])
     data = ast.literal_eval(request.data.decode("utf-8"))
     lat = str(data.get('lat'))
     lng = str(data.get('lng'))
     # check places table first
-    place = Place.get_nearby_place(lat, lng, 5)
+    user = User.get_user_id_by_pairing_code(session['user_pairing_code'])
+    place = Place.get_nearby_place(user.id, lat, lng, 5)
     if place:
-        place_json = json.loads(place[0].get('json_string'))
-        return {
-            'distance': str(place[0].get('distance')),
-            'name': place_json['name'],
-            'price_level': place_json['price_level'],
-            'rating': place_json['rating'],
-            'user_ratings_total': place_json['user_ratings_total']
-        }
+        UserPlace.insert_user_place(user.id, place['id'])
+        place_json = json.loads(place['json_string'])
+        photo_array = []
+        for idx, photo_item in enumerate(place_json['photos'][:4]):
+            photo_array.append({'photo_url_' + str(idx) : photo_item['photo_url']})
+
+        d = {'distance': str(floor(place['distance'])),
+             'name': place_json['name'],
+             'restaurant_type': place_json['restaurant_type'],
+             'restaurant_description': place_json['restaurant_description'],
+             'price_level': place_json['price_level'] or '',
+             'rating': place_json['rating'] or '',
+             'user_ratings_total': place_json['user_ratings_total'],
+             'photo_urls': photo_array}
+        return d
     else:
         # no nearby restaurants in the database. go gather some data from google.
         # basic idea for how to implement this: return the first two results (need to handle this with the push()
-        # command in carousel.js. So call the /api/place/nearbyserach, loop through the first two and get
+        # command in carousel.js. So call the /api/place/nearbysearch, loop through the first two and get
         # details/photos, then make the remaining 18 (or whatever the # is) a celery task. these should be
         # in the database by the time the user has swiped through a few cards and easy to request.
         r = gmaps.places_nearby(location=(lat, lng),
@@ -136,15 +146,47 @@ def get_cards():
         for item in r['results']:
             # merge places API result with details request
             merged_json = item
-            detail_r = gmaps.place(item['place_id'],
-                                   fields=['formatted_address', 'formatted_phone_number', 'opening_hours', 'photo'])
+            detail_r = gmaps.place(item['place_id'])
 
             detail_item = detail_r['result']
 
-            merged_json['formatted_address'] = detail_item['formatted_address']
-            merged_json['formatted_phone_number'] = detail_item['formatted_phone_number']
-            merged_json['opening_hours'] = detail_item['opening_hours']
+            for key in detail_item:
+                if not key in merged_json:
+                    merged_json[key] = detail_item[key]
+
+            # google maps places photo API returns a photo. just building the URL and then pre-loading
+            # images on the javascript side.
+            for photo_item in detail_item['photos']:
+                photo_item['photo_url'] = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=640&maxheight=640&photoreference= ' \
+                                          + photo_item['photo_reference'] \
+                                          + '&key=' + current_app.config['GOOGLE_API_KEY']
             merged_json['photos'] = detail_item['photos']
+
+            #get restaurant type/description from URL from the API (this info isn't available in API currently).
+            req = requests.get(detail_item['url']).text
+
+            split = req.split(r'\",null,[\"', 1)#[1]  # prefix r is string literal
+            if split.__len__() == 1:
+                restaurant_type = ''
+            else:
+                split = split[1]
+                restaurant_type = split.split('\"', 1)[0]
+                restaurant_type = restaurant_type.replace('\\\\u0026', '&')
+                restaurant_type = restaurant_type.replace('\\', '')
+                restaurant_type = restaurant_type.title()
+
+            merged_json['restaurant_type'] = restaurant_type
+
+            split = req.split(r'\n,[null,\"', 1)  # prefix r is string literal
+            if split.__len__() == 1:
+                restaurant_description = ''
+            else:
+                split = split[1]
+                restaurant_description = split.split('\"', 1)[0]
+                restaurant_description = restaurant_description.replace('\\\\u0026', '&')
+                restaurant_description = restaurant_description.replace('\\', '')
+
+            merged_json['restaurant_description'] = restaurant_description
 
             Place.insert_place(item['place_id'], item['geometry']['location']['lat'],
                                item['geometry']['location']['lng'],

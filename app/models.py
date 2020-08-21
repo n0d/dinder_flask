@@ -32,6 +32,11 @@ class User(SurrogatePK, db.Model):
         db.session.commit()
         return user
 
+    @staticmethod
+    def get_user_id_by_pairing_code(user_pairing_code):
+        user = User.query.filter_by(user_pairing_code=user_pairing_code).first()
+        return user
+
 
 class Place(SurrogatePK, db.Model):
     __tablename__ = 't_place'
@@ -54,10 +59,10 @@ class Place(SurrogatePK, db.Model):
     # select from existing places in DB locations that are within x miles.
     # relies on postgres extensions "cube" and "earthdistance".
     # point function parameters are (longitude, latitude).
-    def get_nearby_place(lat, lng, within_x_miles):
+    def get_nearby_place(user_id, lat, lng, within_x_miles):
         sql_str = 'SELECT id, gmaps_place_id, ROUND(CAST(POINT(lng, lat) <@> POINT(-122.6761, 45.6257) AS NUMERIC), 1) as distance, json_string ' \
                   'FROM t_place tp ' \
-                  'WHERE NOT EXISTS (SELECT 1 FROM t_user_place tup WHERE tup.gmaps_place_id = tp.gmaps_place_id and tup.user_id = 28)' \
+                  'WHERE NOT EXISTS (SELECT 1 FROM t_user_place tup WHERE tup.place_id = tp.id and tup.user_id = ' + str(user_id) + ') ' \
                   'GROUP BY id, gmaps_place_id, lng, lat ' \
                   'HAVING (point(lng, lat) <@> point(' + str(lng) + ', ' + str(lat) + ')) < ' + str(within_x_miles) + ' ' \
                               'ORDER BY distance ' \
@@ -71,20 +76,23 @@ class Place(SurrogatePK, db.Model):
             for column, value in rowproxy.items():
                 d = {**d, **{column: value}}
         result_array.append(d)
-        return result_array
+        if not d:
+            return []
+        else:
+            return result_array[0]
 
 
 # places that user swiped right on.
 class UserPlace(SurrogatePK, db.Model):
     __tablename__ = 't_user_place'
-    user_id = db.Column(db.Integer, db.ForeignKey('t_user.id'), nullable=True)
-    gmaps_place_id = db.Column(db.String(255), db.ForeignKey('t_place.gmaps_place_id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('t_user.id'))
+    place_id = db.Column(db.Integer, db.ForeignKey('t_place.id'))
 
     @staticmethod
-    def insert_user_place(user_pairing_code, gmaps_place_id):
+    def insert_user_place(user_id, place_id):
         user_place = UserPlace(
-            user_pairing_code=user_pairing_code,
-            gmaps_place_id=gmaps_place_id
+            user_id=user_id,
+            place_id=place_id
         )
         db.session.add(user_place)
         db.session.commit()

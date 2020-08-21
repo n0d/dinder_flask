@@ -12,8 +12,7 @@ class Carousel {
         this.push()
         this.push()
 
-        // handle gestures
-        this.handle()
+        // this.handle()
     }
 
     handle() {
@@ -39,7 +38,7 @@ class Carousel {
 
             //{touchAction:'pan-y'}
             // listen for tap and pan gestures on top card
-            this.hammer = new Hammer(this.topCard )
+            this.hammer = new Hammer(this.topCard)
             this.hammer.add(new Hammer.Tap())
             this.hammer.add(new Hammer.Pan({
                 position: Hammer.position_ALL,
@@ -59,7 +58,7 @@ class Carousel {
         }
     }
 
-    jiggleImage (e) {
+    jiggleImage(e) {
         // get finger position on top card
         let propX = (e.center.x - e.target.getBoundingClientRect().left) / e.target.clientWidth
 
@@ -84,13 +83,13 @@ class Carousel {
     /*
     * Expand the "info view" from the regular fullscreen swipe view.
     * */
-    expandInfo () {
+    expandInfo() {
         this.isInfoView = true
         //hide restaurant info on the card (now displaying in info section)
-        this.topCard.children[3].style.display='none'
+        this.topCard.children[3].style.display = 'none'
 
         //allow horizontal scroll, even when card is selected.
-        this.hammer.set({touchAction:'pan-y'})
+        this.hammer.set({touchAction: 'pan-y'})
         document.getElementById('restaurantInfoBelowCard').style.display = 'block'
 
         /* enable regular vertical scrolling when in info mode */
@@ -110,7 +109,7 @@ class Carousel {
         this.topCard.style.borderRadius = '0%'
 
         //hide the next card.
-        this.nextCard.style.display='none'
+        this.nextCard.style.display = 'none'
 
         //show button to go back to regular view
         document.getElementById('backToRegularViewButton').style.display = 'block'
@@ -123,14 +122,14 @@ class Carousel {
     /*
     * Shrink the "info view" back to regular fullscreen swipe view.
     * */
-    shrinkInfo () {
+    shrinkInfo() {
         this.isInfoView = false
 
         /* show restaurant info on card again */
-        this.topCard.children[3].style.display='block'
+        this.topCard.children[3].style.display = 'block'
 
         /* hammer object is the card. switch back to regular hammer mode. none means it's just responding to the card listeners (pan and tap).*/
-        this.hammer.set({touchAction:'none'})
+        this.hammer.set({touchAction: 'none'})
 
         /* hiding the info below the card while in regular swipe mode, so there's nothing to vertical scroll to. */
         board.style.overflow = 'hidden'
@@ -150,7 +149,7 @@ class Carousel {
         this.topCard.style.boxShadow = '0px 4px 4px 0px rgba(0, 0, 0, 0.1), 0px -500px 100px -100px rgba(0, 0, 0, .3) inset, 0px 150px 100px -100px rgba(0, 0, 0, 0.12) inset;'
 
         //re-show the next card behind top card.
-        this.nextCard.style.display='block'
+        this.nextCard.style.display = 'block'
 
         //hide button when back in regular view
         document.getElementById('backToRegularViewButton').style.display = 'none'
@@ -159,7 +158,7 @@ class Carousel {
         document.getElementById('navBarTop').style.display = 'block'
     }
 
-    throwCard (posX, deg) {
+    throwCard(posX, deg) {
 
         this.topCard.style.transition = 'transform 200ms ease-out'
         this.topCard.style.transform =
@@ -170,12 +169,12 @@ class Carousel {
 
         document.getElementById('backToRegularViewButton').style.display = 'none'
         document.getElementById('backToRegularViewButton').style.pointerEvents = 'none'
-        this.topCard.children[3].style.display='block'
+        this.topCard.children[3].style.display = 'block'
         document.getElementById('restaurantInfoOnCard').style.display = 'block'
-         /* disable regular vertical scrolling when in regular swipe mode */
+        /* disable regular vertical scrolling when in regular swipe mode */
         board.style.overflow = 'hidden'
 
-        this.hammer.set({touchAction:'none'})
+        this.hammer.set({touchAction: 'none'})
 
         // wait transition end
         setTimeout(() => {
@@ -184,11 +183,10 @@ class Carousel {
 
             // add new card
             this.push()
-            // handle gestures on new top card
-            this.handle()
             this.isInfoView = false
             this.isRightSwipe = false
             this.isLeftSwipe = false
+            // this.handle()
             $('#board').children().eq(1).attr('id', 'card_0')
         }, 200);
     }
@@ -204,18 +202,17 @@ class Carousel {
 
         //bottom 1/4 of screen is a bottom tap.
         this.isTappingBottom =
-            (e.center.y - bounds.top) < this.topCard.clientHeight *.75 ? false : true
+            (e.center.y - bounds.top) < this.topCard.clientHeight * .75 ? false : true
 
         //split screen vertically in half for left/right taps.
         this.isTappingLeft =
             (e.center.x - bounds.left) > this.topCard.clientWidth * .5 ? false : true
 
-        if (this.isTappingBottom && !this.isInfoView ) {
+        if (this.isTappingBottom && !this.isInfoView) {
             // console.log('tap bottom')
-            window.history.pushState({url:'info', title:'info'}, 'info', 'info')
+            window.history.pushState({url: 'info', title: 'info'}, 'info', 'info')
             this.expandInfo(e)
-        }
-        else {
+        } else {
             //if tap left, decrement current img counter. if tap right, increment.
             if (this.isTappingLeft) {
                 if (currImageNum === 1) {
@@ -326,8 +323,7 @@ class Carousel {
 
                 //posX
                 this.throwCard(-(this.board.clientWidth + this.topCard.clientWidth), deg)
-            }
-            else {
+            } else {
                 // reset cards position and size
                 this.topCard.style.transform =
                     'translateX(-50%) translateY(-50%) rotate(0deg) rotateY(0deg) scale(1)'
@@ -337,7 +333,11 @@ class Carousel {
         }
     }
 
+
     push() {
+        //save instance of Carousel class to a variable, so that we can call it in the /get_card callback.
+        //see https://stackoverflow.com/questions/4018461/unable-to-use-class-methods-for-callbacks-in-javascript
+        var self = this;
 
         /*
             <div class="card">
@@ -350,124 +350,150 @@ class Carousel {
             </div>
 
          */
-        var imageUrls = ["https://picsum.photos/1400/?random=" + Math.round(Math.random() * 1000000),
-                         "https://picsum.photos/1400/?random=" + Math.round(Math.random() * 1000000)]
+        // var imageUrls = ["https://picsum.photos/1400/?random=" + Math.round(Math.random() * 1000000),
+        //                  "https://picsum.photos/1400/?random=" + Math.round(Math.random() * 1000000)]
 
-        function preload(imageUrls) {
-            for (var i = 0; i < imageUrls.length; i++) {
+        // let json = getCard(cookie_lat, cookie_lng)
+
+
+        $.ajax({
+            type: "POST",
+            url: "/get_card",
+
+            data: JSON.stringify({
+                "lat": cookie_lat,
+                "lng": cookie_lng
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                images[currImageArrayIndex] = new Array()
+                preload(result.photo_urls)
+                let card = document.createElement('div')
+
+                card.classList.add('card')
+                card.setAttribute('numImages', result.photo_urls.length)
+                card.setAttribute('currImage', 1)
+                card.setAttribute('currImageArrayIndex', currImageArrayIndex)
+
+                /* create current image # indicator */
+                let imageNumIndicator = document.createElement('div')
+                imageNumIndicator.classList.add('imageNumIndicator')
+                card.appendChild(imageNumIndicator)
+
+                let swipeRightGreenIndicator = document.createElement('div')
+                swipeRightGreenIndicator.id = 'swipeRightGreenIndicator'
+                card.appendChild(swipeRightGreenIndicator)
+
+                let swipeLeftRedIndicator = document.createElement('div')
+                swipeLeftRedIndicator.id = 'swipeLeftRedIndicator'
+                card.appendChild(swipeLeftRedIndicator)
+
+
+                /* restaurant Info. put each item in the main "restaurant info" div so it can all be hidden at once. */
+                let restaurantInfoOnCard = document.createElement('div')
+                restaurantInfoOnCard.id = 'restaurantInfoOnCard'
+                card.appendChild(restaurantInfoOnCard)
+
+                let restaurantName = document.createElement('h1')
+                restaurantName.id = 'restaurantName'
+                restaurantName.innerHTML = result.name
+                restaurantInfoOnCard.appendChild(restaurantName)
+
+                let restaurantRating = document.createElement('h2')
+                restaurantRating.id = 'restaurantRating'
+                restaurantInfoOnCard.appendChild(restaurantRating)
+
+                let ratingStar1 = document.createElement('span')
+                ratingStar1.classList.add('fa')
+                ratingStar1.classList.add('fa-star')
+                ratingStar1.classList.add('checked')
+                restaurantRating.appendChild(ratingStar1)
+
+                let ratingStar2 = document.createElement('span')
+                ratingStar2.classList.add('fa')
+                ratingStar2.classList.add('fa-star')
+                ratingStar2.classList.add('checked')
+                restaurantRating.appendChild(ratingStar2)
+
+                let ratingStar3 = document.createElement('span')
+                ratingStar3.classList.add('fa')
+                ratingStar3.classList.add('fa-star')
+                ratingStar3.classList.add('fa-star')
+                ratingStar3.classList.add('checked')
+                restaurantRating.appendChild(ratingStar3)
+
+                let ratingStar4 = document.createElement('span')
+                ratingStar4.classList.add('fa')
+                ratingStar4.classList.add('fa-star')
+                ratingStar4.classList.add('checked')
+                restaurantRating.appendChild(ratingStar4)
+
+                let ratingStar5 = document.createElement('span')
+                ratingStar5.classList.add('fa')
+                ratingStar5.classList.add('fa-star')
+                restaurantRating.appendChild(ratingStar5)
+
+                let restaurantType = document.createElement('h2')
+                restaurantType.id = 'restaurantType'
+                restaurantType.innerHTML = result.restaurant_type
+                restaurantInfoOnCard.appendChild(restaurantType)
+
+                let miles_away_str = ''
+                if (result.distance === '0') {
+                    miles_away_str = 'Less than 1 mile away'
+                } else if (result.distance === '1') {
+                    miles_away_str = '1 mile away'
+                } else {
+                    miles_away_str = result.distance + ' miles away'
+                }
+
+                let restaurantMilesAway = document.createElement('h2')
+                restaurantMilesAway.id = 'restaurantMilesAway'
+                restaurantMilesAway.innerHTML = miles_away_str
+                restaurantInfoOnCard.appendChild(restaurantMilesAway)
+
+                let imageNumIndicatorTab
+                let imageNumIndicatorTabNum
+                for (var i = 0; i < card.getAttribute('numImages'); i++) {
+                    imageNumIndicatorTab = document.createElement('div')
+                    if (i != 0) {
+                        imageNumIndicatorTab.style.opacity = '0.2';
+                    }
+                    imageNumIndicatorTabNum = i + 1
+                    imageNumIndicatorTab.id = 'imageNumIndicatorTab_' + imageNumIndicatorTabNum;
+                    imageNumIndicator.appendChild(imageNumIndicatorTab)
+                }
+
+                if (parseInt(card.getAttribute('numImages')) === 1) {
+                    imageNumIndicatorTab.style.display = 'none';
+                }
+
+                card.style.backgroundImage = "url(" + images[currImageArrayIndex][0].src + ")"
+
+                if (board.childElementCount === 4) {
+                    card.id = 'card_0'
+                } else {
+                    card.id = 'card_1'
+                }
+                board.insertBefore(card, board.firstChild)
+
+                currImageArrayIndex = (currImageArrayIndex === 0) ? 1 : 0
+                console.log(result);
+                // handle gestures
+                self.handle()
+
+            },
+            error: function (result) {
+                console.log(result);
+            },
+        });
+
+        function preload(photo_urls) {
+            for (var i = 0; i < photo_urls.length; i++) {
                 images[currImageArrayIndex][i] = new Image()
-                images[currImageArrayIndex][i].src = imageUrls[i]
+                images[currImageArrayIndex][i].src = photo_urls[i]['photo_url_' + i.toString()]
             }
         }
-
-        images[currImageArrayIndex] = new Array()
-        preload(imageUrls)
-
-        let card = document.createElement('div')
-
-        card.classList.add('card')
-        card.setAttribute('numImages', 2)
-        card.setAttribute('currImage', 1)
-        card.setAttribute('currImageArrayIndex', currImageArrayIndex)
-
-        /* create current image # indicator */
-        let imageNumIndicator = document.createElement('div')
-        imageNumIndicator.classList.add('imageNumIndicator')
-        card.appendChild(imageNumIndicator)
-
-        let swipeRightGreenIndicator = document.createElement('div')
-        swipeRightGreenIndicator.id = 'swipeRightGreenIndicator'
-        card.appendChild(swipeRightGreenIndicator)
-
-        let swipeLeftRedIndicator = document.createElement('div')
-        swipeLeftRedIndicator.id = 'swipeLeftRedIndicator'
-        card.appendChild(swipeLeftRedIndicator)
-
-
-        /* restaurant Info. put each item in the main "restaurant info" div so it can all be hidden at once. */
-        let restaurantInfoOnCard = document.createElement('div')
-        restaurantInfoOnCard.id = 'restaurantInfoOnCard'
-        card.appendChild(restaurantInfoOnCard)
-
-        let restaurantName = document.createElement('h1')
-        restaurantName.id = 'restaurantName'
-        restaurantName.innerHTML='Smokin\' Oak'
-        restaurantInfoOnCard.appendChild(restaurantName)
-
-        let restaurantRating = document.createElement('h2')
-        restaurantRating.id = 'restaurantRating'
-        restaurantInfoOnCard.appendChild(restaurantRating)
-
-        let ratingStar1 = document.createElement('span')
-        ratingStar1.classList.add('fa')
-        ratingStar1.classList.add('fa-star')
-        ratingStar1.classList.add('checked')
-        restaurantRating.appendChild(ratingStar1)
-
-        let ratingStar2 = document.createElement('span')
-        ratingStar2.classList.add('fa')
-        ratingStar2.classList.add('fa-star')
-        ratingStar2.classList.add('checked')
-        restaurantRating.appendChild(ratingStar2)
-
-        let ratingStar3 = document.createElement('span')
-        ratingStar3.classList.add('fa')
-        ratingStar3.classList.add('fa-star')
-        ratingStar3.classList.add('fa-star')
-        ratingStar3.classList.add('checked')
-        restaurantRating.appendChild(ratingStar3)
-
-        let ratingStar4 = document.createElement('span')
-        ratingStar4.classList.add('fa')
-        ratingStar4.classList.add('fa-star')
-        ratingStar4.classList.add('checked')
-        restaurantRating.appendChild(ratingStar4)
-
-        let ratingStar5 = document.createElement('span')
-        ratingStar5.classList.add('fa')
-        ratingStar5.classList.add('fa-star')
-        restaurantRating.appendChild(ratingStar5)
-
-        let restaurantType = document.createElement('h2')
-        restaurantType.id = 'restaurantType'
-        restaurantType.innerHTML='Barbecue restaurant'
-        restaurantInfoOnCard.appendChild(restaurantType)
-
-        let restaurantMilesAway = document.createElement('h2')
-        restaurantMilesAway.id = 'restaurantMilesAway'
-        restaurantMilesAway.innerHTML='4 miles away'
-        restaurantInfoOnCard.appendChild(restaurantMilesAway)
-
-        let restaurantDescription = document.createElement('div')
-        restaurantDescription.id = 'restaurantDescription'
-        restaurantInfoOnCard.appendChild(restaurantDescription)
-
-        let imageNumIndicatorTab
-        let imageNumIndicatorTabNum
-        for (var i = 0; i < card.getAttribute('numImages'); i++) {
-            imageNumIndicatorTab = document.createElement('div')
-            if (i != 0) {
-                imageNumIndicatorTab.style.opacity='0.2';
-            }
-            imageNumIndicatorTabNum = i + 1
-            imageNumIndicatorTab.id='imageNumIndicatorTab_' + imageNumIndicatorTabNum;
-            imageNumIndicator.appendChild(imageNumIndicatorTab)
-        }
-
-        if (parseInt(card.getAttribute('numImages')) === 1) {
-            imageNumIndicatorTab.style.display='none';
-        }
-
-        card.style.backgroundImage =  "url(" + images[currImageArrayIndex][0].src + ")"
-
-        if (this.board.childElementCount === 4) {
-            card.id = 'card_0'
-        }
-        else {
-            card.id = 'card_1'
-        }
-        this.board.insertBefore(card, this.board.firstChild)
-
-        currImageArrayIndex = (currImageArrayIndex === 0) ? 1 : 0
     }
 }

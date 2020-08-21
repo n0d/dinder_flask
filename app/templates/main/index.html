@@ -101,6 +101,118 @@
     {{ super() }}
     <script type="text/javascript">
 
+        /* index alternates between 0 and 1, since there are always two buffers of images for preloading. */
+        var currImageArrayIndex=0
+        var images = []
+
+        var board = document.querySelector('#board')
+        var carousel
+
+        var user_code_requesting;
+        var user_code_accepted;
+
+
+        {##}
+        {#function getCard(lat, lng) {#}
+        {#    var result = ''#}
+        {#    #}
+        {#    return result#}
+        {##}
+
+        //ask user for location. no functionality (currently) on site if they don't his "Allow".
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(getPositionSuccess, getPositionError);
+        } else {
+            alert("Geolocation is not supported by this browser.");
+        }
+
+        // success callback for navigator.getlocation
+        function getPositionSuccess(position) {
+            var csrf_token =  $('input[name="csrf_token"]').attr('value');
+            $.ajaxSetup({
+                beforeSend: function(xhr, settings) {
+                    if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                        xhr.setRequestHeader("X-CSRFToken", csrf_token);
+                    }
+                }
+            });
+
+            cookie_lat = position.coords.latitude
+            cookie_lng = position.coords.longitude
+
+            var coords = {"curr_lat":cookie_lat, "curr_lng":cookie_lng}
+
+            //send a post request to check if the corresponding entry in t_user has been created,
+            //if not, then it creates it.
+             $.ajax({
+                type: "POST",
+                url: "/create_user_if_not_exists",
+
+                data: JSON.stringify(coords ),
+                contentType:"application/json; charset=utf-8",
+                dataType: "json",
+                success: function(result) {
+
+                    user_pairing_code = result.user_pairing_code
+                    $('#yourCode').find('h2').text(result.user_pairing_code)
+                    //if user is matched, set the info box on the account page accordingly.
+                    if (result.matched_user_pairing_code) {
+                        $('#pairedInfo').find('h2').text('Paired with User "' + result.matched_user_pairing_code + '"')
+                        document.getElementById('pairedInfo').style.border = '1px solid gray'
+                    }
+
+                    //code to handle SSEs from flask.
+                    var source = new EventSource("{{ url_for('sse.stream')}}" + '?channel=' + user_pairing_code);
+
+                    source.onmessage = function(event) {
+                        var data =JSON.parse(event.data);
+                        if (data.event_name === 'pair_request') {
+                            user_code_requesting = data.user_code;
+                            openPairOverlay('User "' + data.user_code + '" requested to pair up.')
+                        }
+                        else if (data.event_name === 'pair_accept') {
+                            user_code_accepted = data.user_code;
+                            openPairOverlay('Paired with user "' + data.user_code + '".')
+                            document.getElementById('acceptPairButton').style.visibility='hidden'
+                            document.getElementById('acceptPairButton').style.pointerEvents='none'
+                            document.getElementById('dontPairButton').innerText = 'OK'
+                            $('#pairedInfo').find('h2').text('Paired with User "' + data.user_code + '"')
+                            document.getElementById('pairedInfo').style.border = '1px solid gray'
+                        }
+                        console.log(data)
+                    }
+                    //at this point,
+                    //1) user allows location services in browser
+                    //2) /create_user_if_not_exists (so there's a session, user pairing code, etc.)
+                    //3) event source for SSEs is created
+                    carousel = new Carousel(board)
+                    console.log(result);
+                }, //end success callback
+                error: function(result) {
+                    console.log(result);
+                },
+            });
+        };
+
+        /* Error callback for getLocation() */
+        function getPositionError(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    alert("User denied the request for Geolocation.");
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    alert("Location information is unavailable.");
+                    break;
+                case error.TIMEOUT:
+                    alert("The request to get user location timed out.");
+
+                    break;
+                case error.UNKNOWN_ERROR:
+                    alert("An unknown error occurred.");
+                    break;
+            }
+        }
+
         var user_pairing_code = ''
 
         function switchToSwipeView() {
@@ -152,13 +264,6 @@
          document.getElementById('dontPairButton').onclick = function () {
             document.getElementById('pair-overlay').style.height = "0%";
          }
-
-        /* index alternates between 0 and 1, since there are always two buffers of images for preloading. */
-        var currImageArrayIndex=0
-        var images = []
-
-        let board = document.querySelector('#board')
-        let carousel = new Carousel(board)
 
         let isAccountView = false
 
@@ -289,122 +394,10 @@
             document.getElementById('pair-overlay').style.height = "100%";
         }
 
-        var user_code_requesting;
-        var user_code_accepted;
-       {#source.addEventListener('error', function(event) {#}
-       {#     alert("Failed to connect to event stream. Is Redis running?");#}
-       {# }, false);#}
 
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(getPositionSuccess, getPositionError);
-        } else {
-            alert("Geolocation is not supported by this browser.");
-        }
 
-        // success callback for navigator.getlocation
-        function getPositionSuccess(position) {
-            var csrf_token =  $('input[name="csrf_token"]').attr('value');
-            $.ajaxSetup({
-                beforeSend: function(xhr, settings) {
-                    if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
-                        xhr.setRequestHeader("X-CSRFToken", csrf_token);
-                    }
-                }
-            });
 
-            cookie_lat = position.coords.latitude
-            cookie_lng = position.coords.longitude
 
-            var coords = {"curr_lat":cookie_lat, "curr_lng":cookie_lng}
 
-            //the first time a user goes to the site, a session cookie is created.
-            //flask-session inserts an entry into t_session, and the main view fxn returns index.html.
-            //this page sends a post request to check if the corresponding entry in t_user has been created,
-            //if not, then it creates it.
-             $.ajax({
-                type: "POST",
-                url: "/create_user_if_not_exists",
-
-                data: JSON.stringify(coords ),
-                contentType:"application/json; charset=utf-8",
-                dataType: "json",
-                success: function(result) {
-
-                    user_pairing_code = result.user_pairing_code
-                    $('#yourCode').find('h2').text(user_pairing_code)
-                    //if user is matched, set the info box on the account page accordingly.
-                    if (result.matched_user_pairing_code) {
-                        $('#pairedInfo').find('h2').text('Paired with User "' + result.matched_user_pairing_code + '"')
-                        document.getElementById('pairedInfo').style.border = '1px solid gray'
-                    }
-
-                    //code to handle SSEs from flask.
-                    var source = new EventSource("{{ url_for('sse.stream')}}" + '?channel=' + user_pairing_code);
-
-                    source.onmessage = function(event) {
-                        var data =JSON.parse(event.data);
-                        if (data.event_name === 'pair_request') {
-                            user_code_requesting = data.user_code;
-                            openPairOverlay('User "' + data.user_code + '" requested to pair up.')
-                        }
-                        else if (data.event_name === 'pair_accept') {
-                            user_code_accepted = data.user_code;
-                            openPairOverlay('Paired with user "' + data.user_code + '".')
-                            document.getElementById('acceptPairButton').style.visibility='hidden'
-                            document.getElementById('acceptPairButton').style.pointerEvents='none'
-                            document.getElementById('dontPairButton').innerText = 'OK'
-                            $('#pairedInfo').find('h2').text('Paired with User "' + data.user_code + '"')
-                            document.getElementById('pairedInfo').style.border = '1px solid gray'
-                        }
-                        console.log(data)
-                    }
-                    //once user is created, get info for cards.
-                    getCards(cookie_lat, cookie_lng)
-                    console.log(result);
-                }, //end success callback
-                error: function(result) {
-                    console.log(result);
-                },
-            });
-        };
-
-        /* Error callback for getLocation() */
-        function getPositionError(error) {
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    alert("User denied the request for Geolocation.");
-                  break;
-                case error.POSITION_UNAVAILABLE:
-                    alert("Location information is unavailable.");
-                  break;
-                case error.TIMEOUT:
-                    alert("The request to get user location timed out.");
-
-                  break;
-                case error.UNKNOWN_ERROR:
-                    alert("An unknown error occurred.");
-                  break;
-            }
-        };
-
-        function getCards(lat, lng) {
-            $.ajax({
-                type: "POST",
-                url: "/get_cards",
-
-                data: JSON.stringify({
-                    "lat": lat,
-                    "lng": lng
-                }),
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
-                success: function (result) {
-                    console.log(result);
-                },
-                error: function (result) {
-                    console.log(result);
-                },
-            });
-        }
     </script>
 {% endblock %}
