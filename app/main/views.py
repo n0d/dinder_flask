@@ -127,7 +127,7 @@ def get_card():
         place_json = json.loads(place['json_string'])
         photo_array = []
         for idx, photo_item in enumerate(place_json['photos'][:4]):
-            photo_array.append({'photo_url_' + str(idx) : photo_item['photo_url']})
+            photo_array.append({'photo_url_' + str(idx): photo_item['photo_url']})
 
         price_level = ''
         if 'price_level' in place_json:
@@ -154,7 +154,7 @@ def get_card():
         # details/photos, then make the remaining 18 (or whatever the # is) a celery task. these should be
         # in the database by the time the user has swiped through a few cards and easy to request.
         r = gmaps.places_nearby(location=(lat, lng),
-                            open_now=True,
+                                open_now=True,
                                 radius=8000,
                                 type='restaurant')
         for item in r['results']:
@@ -171,15 +171,16 @@ def get_card():
             # google maps places photo API returns a photo. just building the URL and then pre-loading
             # images on the javascript side.
             for photo_item in detail_item['photos']:
-                photo_item['photo_url'] = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=640&maxheight=640&photoreference= ' \
-                                          + photo_item['photo_reference'] \
-                                          + '&key=' + current_app.config['GOOGLE_API_KEY']
+                photo_item[
+                    'photo_url'] = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=640&maxheight=640&photoreference= ' \
+                                   + photo_item['photo_reference'] \
+                                   + '&key=' + current_app.config['GOOGLE_API_KEY']
             merged_json['photos'] = detail_item['photos']
 
-            #get restaurant type/description from URL from the API (this info isn't available in API currently).
+            # get restaurant type/description from URL from the API (this info isn't available in API currently).
             req = requests.get(detail_item['url']).text
 
-            split = req.split(r'\",null,[\"', 1)#[1]  # prefix r is string literal
+            split = req.split(r'\",null,[\"', 1)  # [1]  # prefix r is string literal
             if split.__len__() == 1:
                 restaurant_type = ''
             else:
@@ -207,7 +208,8 @@ def get_card():
                                json.dumps(merged_json))
 
 
-# user requested to pair with another via account page -> Pair
+# user has swiped left/right on a restaurant. post the swipe action to the DB and check
+# if there is a match with their paired user.
 @main.route('/post_swipe', methods=['POST'])
 def post_swipe():
     data = ast.literal_eval(request.data.decode("utf-8"))
@@ -222,6 +224,25 @@ def post_swipe():
 
     place = Place.get_place_by_gmaps_place_id(gmaps_place_id=gmaps_place_id)
     UserPlace.update_swipe(user_id=user.id, place_id=place.id, is_swipe_right=is_swipe_right)
+
+    # check if matched user also swiped right on the same restaurant.
+    if is_swipe_right and UserPlace.check_if_match_user_swiped_right(user_id_matched=user.user_id_matched,
+                                                                     place_id=place.id):
+        # need to pass place name and first photo URL.
+        place_json = json.loads(place['json_string'])
+
+        # publish to user
+        sse.publish({'restaurant_name': place_json['name'],
+                     'photo_url_0': place_json['photos'][0],
+                     'event_name': 'match'},
+                    channel=user.user_pairing_code)
+
+        # publish to matched user
+        user_matched = User.get_by_id(user.id)
+        sse.publish({'restaurant_name': place_json['name'],
+                     'photo_url_0': place_json['photos'][0],
+                     'event_name': 'match'},
+                    channel=user_matched.user_pairing_code)
 
     resp = make_response('', 204)
     return resp

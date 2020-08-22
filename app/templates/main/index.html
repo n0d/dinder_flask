@@ -169,6 +169,9 @@
                             $('#pairedInfo').find('h2').text('Paired with User "' + data.user_code + '"')
                             document.getElementById('pairedInfo').style.border = '1px solid gray'
                         }
+                        else if (data.event_name === 'match') {
+                            openMatchOverlay()
+                        }
                         console.log(data)
                     }
                     //at this point,

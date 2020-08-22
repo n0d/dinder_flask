@@ -345,7 +345,6 @@ class Carousel {
             if (propX > 0.25 && e.direction === Hammer.DIRECTION_RIGHT) {
                 this.isRightSwipe = true
                 this.throwCard(this.board.clientWidth, deg)
-                openMatchOverlay()
 
             } else if (propX < -0.25 && e.direction === Hammer.DIRECTION_LEFT) {
                 this.isLeftSwipe = true

@@ -1,5 +1,5 @@
 from .database import SurrogatePK
-from sqlalchemy import text
+from sqlalchemy import text, true
 from . import db
 import random
 import string
@@ -67,7 +67,7 @@ class Place(SurrogatePK, db.Model):
     def get_nearby_place(user_id, lat, lng, within_x_miles, is_offset):
         sql_str = 'SELECT id, gmaps_place_id, ROUND(CAST(POINT(lng, lat) <@> POINT(-122.6761, 45.6257) AS NUMERIC), 1) AS distance, json_string ' \
                   'FROM t_place tp ' \
-                  'WHERE NOT EXISTS (SELECT 1 FROM t_user_place tup WHERE tup.is_swipe_right IS NOT NULL AND tup.place_id = tp.id AND tup.user_id = ' + str(user_id) + ') ' \
+                  'WHERE NOT EXISTS (SELECT 1 FROM t_user_place tup WHERE tup.place_id = tp.id AND tup.user_id = ' + str(user_id) + ') ' \
                   'GROUP BY id, gmaps_place_id, lng, lat ' \
                   'HAVING (point(lng, lat) <@> point(' + str(lng) + ', ' + str(lat) + ')) < ' + str(within_x_miles) + ' ' \
                               'ORDER BY distance ' \
@@ -117,3 +117,9 @@ class UserPlace(SurrogatePK, db.Model):
         user_place = UserPlace.query.filter_by(user_id=user_id, place_id=place_id).first()
         user_place.is_swipe_right = is_swipe_right
         db.session.commit()
+
+    @staticmethod
+    def check_if_match_user_swiped_right(user_id_matched, place_id):
+        if UserPlace.query.filter_by(user_id=user_id_matched, place_id=place_id, is_swipe_right=true).first():
+            return True
+        return False
