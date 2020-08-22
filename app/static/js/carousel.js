@@ -12,7 +12,17 @@ class Carousel {
         this.push()
         this.push()
 
-        // this.handle()
+        /* need to save these values for populating info below cards.
+           when push() is called, we can get the data from /get_card and populate the card at the time of the call.
+           however, /get_card is called one card ahead, we need to save these values to populate them correctly when
+           a card is thrown and a new card is displayed.
+         */
+        this.restaurantName = ''
+        this.restaurantType = ''
+        this.restaurantMilesAway = ''
+        this.restaurantDescription = ''
+        this.restaurantPriceLevel = ''
+        this.restaurantRating = ''
     }
 
     handle() {
@@ -181,13 +191,15 @@ class Carousel {
             // remove swiped card
             this.board.removeChild(this.topCard)
 
+            //set below card values to the nextCard (saved in JS variables)
+            this.setBelowCardInfo(this.restaurantName, this.restaurantType, this.restaurantMilesAway, this.restaurantDescription, this.restaurantPriceLevel, this.restaurantRating)
+
             // add new card
             this.push()
             this.isInfoView = false
             this.isRightSwipe = false
             this.isLeftSwipe = false
-            // this.handle()
-            $('#board').children().eq(1).attr('id', 'card_0')
+
         }, 200);
     }
 
@@ -333,6 +345,14 @@ class Carousel {
         }
     }
 
+    setBelowCardInfo(restaurantName, restaurantType, restaurantMilesAway, restaurantDescription, restaurantPriceLevel, restaurandRating) {
+        document.getElementById('restaurantNameBelowCard').innerHTML = restaurantName
+        document.getElementById('restaurantTypeBelowCard').innerHTML = '<span style="color:gray"><i class="fas fa-dollar-sign"></i><i class="fas fa-dollar-sign"></i></span> ' + restaurantType
+        document.getElementById('restaurantMilesAwayBelowCard').innerHTML = '<i class="fas fa-map-marker-alt"></i> ' + restaurantMilesAway
+        document.getElementById('restaurantDescriptionBelowCard').innerHTML = restaurantDescription
+
+        setRatingStars('restaurantRatingBelowCard', restaurandRating)
+    }
 
     push() {
         //save instance of Carousel class to a variable, so that we can call it in the /get_card callback.
@@ -348,13 +368,7 @@ class Carousel {
                 <div class="backToRegularViewButton">
                 </div>
             </div>
-
          */
-        // var imageUrls = ["https://picsum.photos/1400/?random=" + Math.round(Math.random() * 1000000),
-        //                  "https://picsum.photos/1400/?random=" + Math.round(Math.random() * 1000000)]
-
-        // let json = getCard(cookie_lat, cookie_lng)
-
 
         $.ajax({
             type: "POST",
@@ -367,6 +381,23 @@ class Carousel {
             contentType: "application/json; charset=utf-8",
             dataType: "json",
             success: function (result) {
+                self.restaurantName = result.name
+                self.restaurantType = result.restaurant_type
+                self.restaurantDescription = result.restaurant_description
+                self.restaurantRating = result.rating
+                self.restaurantPriceLevel = result.price_level
+
+                let miles_away_str = ''
+                if (result.distance === '0') {
+                    miles_away_str = 'Less than 1 mile away'
+                } else if (result.distance === '1') {
+                    miles_away_str = '1 mile away'
+                } else {
+                    miles_away_str = result.distance + ' miles away'
+                }
+
+                self.restaurantMilesAway = miles_away_str
+
                 images[currImageArrayIndex] = new Array()
                 preload(result.photo_urls)
                 let card = document.createElement('div')
@@ -389,44 +420,38 @@ class Carousel {
                 swipeLeftRedIndicator.id = 'swipeLeftRedIndicator'
                 card.appendChild(swipeLeftRedIndicator)
 
-
                 /* restaurant Info. put each item in the main "restaurant info" div so it can all be hidden at once. */
                 let restaurantInfoOnCard = document.createElement('div')
                 restaurantInfoOnCard.id = 'restaurantInfoOnCard'
                 card.appendChild(restaurantInfoOnCard)
 
                 let restaurantName = document.createElement('h1')
-                restaurantName.id = 'restaurantName'
-                restaurantName.innerHTML = result.name
+                restaurantName.id = 'restaurantNameOnCard'
+                restaurantName.innerHTML = self.restaurantName
                 restaurantInfoOnCard.appendChild(restaurantName)
 
                 let restaurantRating = document.createElement('h2')
-                restaurantRating.id = 'restaurantRating'
+                restaurantRating.id = 'restaurantRatingOnCard'
                 restaurantInfoOnCard.appendChild(restaurantRating)
 
                 let ratingStar1 = document.createElement('span')
                 ratingStar1.classList.add('fa')
                 ratingStar1.classList.add('fa-star')
-                ratingStar1.classList.add('checked')
                 restaurantRating.appendChild(ratingStar1)
 
                 let ratingStar2 = document.createElement('span')
                 ratingStar2.classList.add('fa')
                 ratingStar2.classList.add('fa-star')
-                ratingStar2.classList.add('checked')
                 restaurantRating.appendChild(ratingStar2)
 
                 let ratingStar3 = document.createElement('span')
                 ratingStar3.classList.add('fa')
                 ratingStar3.classList.add('fa-star')
-                ratingStar3.classList.add('fa-star')
-                ratingStar3.classList.add('checked')
                 restaurantRating.appendChild(ratingStar3)
 
                 let ratingStar4 = document.createElement('span')
                 ratingStar4.classList.add('fa')
                 ratingStar4.classList.add('fa-star')
-                ratingStar4.classList.add('checked')
                 restaurantRating.appendChild(ratingStar4)
 
                 let ratingStar5 = document.createElement('span')
@@ -435,23 +460,15 @@ class Carousel {
                 restaurantRating.appendChild(ratingStar5)
 
                 let restaurantType = document.createElement('h2')
-                restaurantType.id = 'restaurantType'
-                restaurantType.innerHTML = result.restaurant_type
+                restaurantType.id = 'restaurantTypeOnCard'
+                restaurantType.innerHTML = self.restaurantType
                 restaurantInfoOnCard.appendChild(restaurantType)
 
-                let miles_away_str = ''
-                if (result.distance === '0') {
-                    miles_away_str = 'Less than 1 mile away'
-                } else if (result.distance === '1') {
-                    miles_away_str = '1 mile away'
-                } else {
-                    miles_away_str = result.distance + ' miles away'
-                }
-
                 let restaurantMilesAway = document.createElement('h2')
-                restaurantMilesAway.id = 'restaurantMilesAway'
-                restaurantMilesAway.innerHTML = miles_away_str
+                restaurantMilesAway.id = 'restaurantMilesAwayOnCard'
+                restaurantMilesAway.innerHTML = self.restaurantMilesAway
                 restaurantInfoOnCard.appendChild(restaurantMilesAway)
+
 
                 let imageNumIndicatorTab
                 let imageNumIndicatorTabNum
@@ -471,12 +488,18 @@ class Carousel {
 
                 card.style.backgroundImage = "url(" + images[currImageArrayIndex][0].src + ")"
 
+                //childelementcount=4 for the first push() when the site opens. populate below card info here,
+                //and when a card is thrown.
                 if (board.childElementCount === 4) {
                     card.id = 'card_0'
+                    self.setBelowCardInfo(self.restaurantName, self.restaurantType, self.restaurantMilesAway, self.restaurantDescription, self.restaurantPriceLevel, self.restaurantRating)
                 } else {
+                    $('#board').children().eq(0).attr('id', 'card_0')
                     card.id = 'card_1'
                 }
                 board.insertBefore(card, board.firstChild)
+
+                setRatingStars('restaurantRatingOnCard', self.restaurantRating)
 
                 currImageArrayIndex = (currImageArrayIndex === 0) ? 1 : 0
                 console.log(result);

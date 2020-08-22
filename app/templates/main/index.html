@@ -37,24 +37,21 @@
             <div id="swipeRightButton"></div>
 
             <div id="restaurantInfoBelowCard" class="container ">
-                <h1 >
-                    Smokin' Oak
+                <h1 id="restaurantNameBelowCard">
                 </h1>
-                <h2>
-                    <span class="fa fa-star checked"></span>
-                    <span class="fa fa-star checked"></span>
-                    <span class="fa fa-star checked"></span>
-                    <span class="fa fa-star checked"></span>
-                    <span class="fa fa-star"></span>
+                <h2 id="restaurantRatingBelowCard">
+                    <span id="ratingStar1" class="fa fa-star"></span>
+                    <span id="ratingStar2" class="fa fa-star"></span>
+                    <span id="ratingStar3" class="fa fa-star"></span>
+                    <span id="ratingStar4" class="fa fa-star"></span>
+                    <span id="ratingStar5" class="fa fa-star"></span>
                 </h2>
-                <p>
-                    <span style="color:gray"><i class="fas fa-dollar-sign"></i><i class="fas fa-dollar-sign"></i></span>  Barbecue Restaurant
+                <p id="restaurantTypeBelowCard">
+
                 </p>
-                <p>
-                    <i class="fas fa-map-marker-alt"></i> 4 miles away
+                <p id="restaurantMilesAwayBelowCard">
                 </p>
-                <p>
-                    Laid-back stop for Texas-style BBQ meats smoked on-site & hearty sides plus catering & a full bar.
+                <p id="restaurantDescriptionBelowCard">
                 </p>
                 {# extra space at the bottom of the screen to display swipe left/right buttons cleanly without overlapping the text. #}
                 <h1 style="visibility: hidden">1</h1>
@@ -288,7 +285,7 @@
             openMatchOverlay()
         }
 
-        function ajaxPost() {
+        function pairRequest() {
             $.ajax({
                 type: "POST",
                 url: "/pair_request",
@@ -309,7 +306,7 @@
 
         $('#submitPairCodeRequest').click(function(e) {
             e.preventDefault()
-            ajaxPost()
+            pairRequest()
         });
 
         document.getElementById('acceptPairButton').onclick = function () {
@@ -394,10 +391,41 @@
             document.getElementById('pair-overlay').style.height = "100%";
         }
 
+        //loop through 5 rating stars and set the color of each star based on rating.
+        function setRatingStars(div_id, strRating) {
+            let spans = document.getElementById(div_id).getElementsByTagName('span')
+            let floatRating = parseFloat(strRating)
+            let dec
+            let percent_left
+            let percent_right
+            let background_color
+            for (var i = 1; i <= spans.length; i++) {
+                if (floatRating >= i) {
+                    spans[i-1].style.color='orange';
+                }
+                else if (floatRating < i && floatRating > (i-1)) {
+                    dec = (floatRating % 1).toFixed(1)
+                    percent_left = dec * 100
+                    percent_right = 100 - percent_left
+                    {#spans[i-1].style.background = '-webkit-gradient(linear, left top, left bottom, from(#000), to(#ccc));'#}
+                    if (div_id === 'restaurantRatingBelowCard') {
+                         background_color = 'gray'
+                    }
+                    else {
+                        background_color = 'white'
+                    }
+                    spans[i-1].style.cssText = 'background: -webkit-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%);  -webkit-text-fill-color: transparent; -webkit-background-clip:text; text-shadow: none;'
+                    {#spans[i-1].style.webkitTextFillColor = 'transparent';#}
+                    {#spans[i-1].style.webkitBackgroundClip = 'text';#}
 
+                    {#spans[i-1].style.background = '-moz-linear-gradient(left, orange ' + percent_left.toString() + '%, white ' + percent_right.toString() + '%);'#}
+                    {#spans[i-1].style.background = '-ms-linear-gradient(left, orange ' + percent_left.toString() + '%, white ' + percent_right.toString() + '%);'#}
+                    {#spans[i-1].style.background = 'linear-gradient(left, orange ' + percent_left.toString() + '%, white ' + percent_right.toString() + '%);'#}
+                }
 
-
-
+            }
+        }
+        {#-webkit-gradient(linear, left top, left bottom, from(#f00), to(#333))#}
 
     </script>
 {% endblock %}

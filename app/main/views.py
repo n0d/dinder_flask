@@ -124,12 +124,20 @@ def get_card():
         for idx, photo_item in enumerate(place_json['photos'][:4]):
             photo_array.append({'photo_url_' + str(idx) : photo_item['photo_url']})
 
+        price_level = ''
+        if 'price_level' in place_json:
+            price_level = place_json['price_level']
+
+        rating = ''
+        if 'rating' in place_json:
+            rating = place_json['rating']
+
         d = {'distance': str(floor(place['distance'])),
              'name': place_json['name'],
              'restaurant_type': place_json['restaurant_type'],
              'restaurant_description': place_json['restaurant_description'],
-             'price_level': place_json['price_level'] or '',
-             'rating': place_json['rating'] or '',
+             'price_level': price_level,
+             'rating': rating,
              'user_ratings_total': place_json['user_ratings_total'],
              'photo_urls': photo_array}
         return d
