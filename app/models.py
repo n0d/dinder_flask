@@ -56,17 +56,27 @@ class Place(SurrogatePK, db.Model):
         db.session.add(place)
         db.session.commit()
 
+    @staticmethod
+    def get_place_by_gmaps_place_id(gmaps_place_id):
+        return Place.query.filter_by(gmaps_place_id=gmaps_place_id).first()
+
     # select from existing places in DB locations that are within x miles.
     # relies on postgres extensions "cube" and "earthdistance".
     # point function parameters are (longitude, latitude).
-    def get_nearby_place(user_id, lat, lng, within_x_miles):
-        sql_str = 'SELECT id, gmaps_place_id, ROUND(CAST(POINT(lng, lat) <@> POINT(-122.6761, 45.6257) AS NUMERIC), 1) as distance, json_string ' \
+    @staticmethod
+    def get_nearby_place(user_id, lat, lng, within_x_miles, is_offset):
+        sql_str = 'SELECT id, gmaps_place_id, ROUND(CAST(POINT(lng, lat) <@> POINT(-122.6761, 45.6257) AS NUMERIC), 1) AS distance, json_string ' \
                   'FROM t_place tp ' \
-                  'WHERE NOT EXISTS (SELECT 1 FROM t_user_place tup WHERE tup.place_id = tp.id and tup.user_id = ' + str(user_id) + ') ' \
+                  'WHERE NOT EXISTS (SELECT 1 FROM t_user_place tup WHERE tup.is_swipe_right IS NOT NULL AND tup.place_id = tp.id AND tup.user_id = ' + str(user_id) + ') ' \
                   'GROUP BY id, gmaps_place_id, lng, lat ' \
                   'HAVING (point(lng, lat) <@> point(' + str(lng) + ', ' + str(lat) + ')) < ' + str(within_x_miles) + ' ' \
                               'ORDER BY distance ' \
-                              'LIMIT 1; '
+                              'LIMIT 1 '
+        if is_offset:
+            sql_str += 'OFFSET 1;'
+        else:
+            sql_str += ';'
+
         resultproxy = db.engine.execute(text(sql_str))
 
         d = {}
@@ -87,6 +97,11 @@ class UserPlace(SurrogatePK, db.Model):
     __tablename__ = 't_user_place'
     user_id = db.Column(db.Integer, db.ForeignKey('t_user.id'))
     place_id = db.Column(db.Integer, db.ForeignKey('t_place.id'))
+    is_swipe_right = db.Column(db.Boolean)
+
+    @staticmethod
+    def get_user_place_by_user_id_and_place_id(user_id, place_id):
+        return UserPlace.query.filter_by(user_id=user_id, place_id=place_id).first()
 
     @staticmethod
     def insert_user_place(user_id, place_id):
@@ -95,4 +110,10 @@ class UserPlace(SurrogatePK, db.Model):
             place_id=place_id
         )
         db.session.add(user_place)
+        db.session.commit()
+
+    @staticmethod
+    def update_swipe(user_id, place_id, is_swipe_right):
+        user_place = UserPlace.query.filter_by(user_id=user_id, place_id=place_id).first()
+        user_place.is_swipe_right = is_swipe_right
         db.session.commit()

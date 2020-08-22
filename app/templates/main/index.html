@@ -45,6 +45,7 @@
                     <span id="ratingStar3" class="fa fa-star"></span>
                     <span id="ratingStar4" class="fa fa-star"></span>
                     <span id="ratingStar5" class="fa fa-star"></span>
+                    <span id="userRatings"></span>
                 </h2>
                 <p id="restaurantTypeBelowCard">
 
@@ -107,14 +108,6 @@
 
         var user_code_requesting;
         var user_code_accepted;
-
-
-        {##}
-        {#function getCard(lat, lng) {#}
-        {#    var result = ''#}
-        {#    #}
-        {#    return result#}
-        {##}
 
         //ask user for location. no functionality (currently) on site if they don't his "Allow".
         if (navigator.geolocation) {
@@ -304,6 +297,25 @@
             });
         }
 
+        function postSwipe(gmaps_place_id, is_swipe_right) {
+            $.ajax({
+                type: "POST",
+                url: "/post_swipe",
+                data: JSON.stringify({
+                    "gmaps_place_id": gmaps_place_id,
+                    "is_swipe_right": is_swipe_right
+                }),
+                contentType:"application/json; charset=utf-8",
+                dataType: "json",
+                success: function(result) {
+                    console.log(result);
+                },
+                error: function(result) {
+                    console.log(result);
+                },
+            });
+        }
+
         $('#submitPairCodeRequest').click(function(e) {
             e.preventDefault()
             pairRequest()
@@ -397,35 +409,36 @@
             let floatRating = parseFloat(strRating)
             let dec
             let percent_left
-            let percent_right
             let background_color
-            for (var i = 1; i <= spans.length; i++) {
+
+            if (div_id === 'restaurantRatingBelowCard') {
+                background_color = 'gray'
+            }
+            else {
+                background_color = 'white'
+            }
+
+            for (var i = 1; i <= spans.length - 1; i++) {
                 if (floatRating >= i) {
                     spans[i-1].style.color='orange';
                 }
                 else if (floatRating < i && floatRating > (i-1)) {
                     dec = (floatRating % 1).toFixed(1)
                     percent_left = dec * 100
-                    percent_right = 100 - percent_left
-                    {#spans[i-1].style.background = '-webkit-gradient(linear, left top, left bottom, from(#000), to(#ccc));'#}
-                    if (div_id === 'restaurantRatingBelowCard') {
-                         background_color = 'gray'
+                    spans[i-1].style.cssText = 'background: -webkit-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
+                                                background: -moz-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
+                                                background: -ms-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
+                                                background: -linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
+                                                -webkit-text-fill-color: transparent; \
+                                                color:transparent; \
+                                                -webkit-background-clip:text; \
+                                                background-clip:text; \
+                                                 text-shadow: none;'
                     }
-                    else {
-                        background_color = 'white'
-                    }
-                    spans[i-1].style.cssText = 'background: -webkit-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%);  -webkit-text-fill-color: transparent; -webkit-background-clip:text; text-shadow: none;'
-                    {#spans[i-1].style.webkitTextFillColor = 'transparent';#}
-                    {#spans[i-1].style.webkitBackgroundClip = 'text';#}
-
-                    {#spans[i-1].style.background = '-moz-linear-gradient(left, orange ' + percent_left.toString() + '%, white ' + percent_right.toString() + '%);'#}
-                    {#spans[i-1].style.background = '-ms-linear-gradient(left, orange ' + percent_left.toString() + '%, white ' + percent_right.toString() + '%);'#}
-                    {#spans[i-1].style.background = 'linear-gradient(left, orange ' + percent_left.toString() + '%, white ' + percent_right.toString() + '%);'#}
+                else {
+                    spans[i-1].style.color=background_color
                 }
-
             }
         }
-        {#-webkit-gradient(linear, left top, left bottom, from(#f00), to(#333))#}
-
     </script>
 {% endblock %}

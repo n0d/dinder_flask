@@ -114,11 +114,16 @@ def get_card():
     data = ast.literal_eval(request.data.decode("utf-8"))
     lat = str(data.get('lat'))
     lng = str(data.get('lng'))
+    is_offset = data.get('is_offset')
+
     # check places table first
     user = User.get_user_id_by_pairing_code(session['user_pairing_code'])
-    place = Place.get_nearby_place(user.id, lat, lng, 5)
+    place = Place.get_nearby_place(user.id, lat, lng, 5, is_offset)
     if place:
-        UserPlace.insert_user_place(user.id, place['id'])
+        user_place = UserPlace.get_user_place_by_user_id_and_place_id(user.id, place['id'])
+        if not user_place:
+            UserPlace.insert_user_place(user.id, place['id'])
+
         place_json = json.loads(place['json_string'])
         photo_array = []
         for idx, photo_item in enumerate(place_json['photos'][:4]):
@@ -132,7 +137,8 @@ def get_card():
         if 'rating' in place_json:
             rating = place_json['rating']
 
-        d = {'distance': str(floor(place['distance'])),
+        d = {'gmaps_place_id': str(place['gmaps_place_id']),
+             'distance': str(floor(place['distance'])),
              'name': place_json['name'],
              'restaurant_type': place_json['restaurant_type'],
              'restaurant_description': place_json['restaurant_description'],
@@ -199,3 +205,23 @@ def get_card():
             Place.insert_place(item['place_id'], item['geometry']['location']['lat'],
                                item['geometry']['location']['lng'],
                                json.dumps(merged_json))
+
+
+# user requested to pair with another via account page -> Pair
+@main.route('/post_swipe', methods=['POST'])
+def post_swipe():
+    data = ast.literal_eval(request.data.decode("utf-8"))
+    is_swipe_right = data.get('is_swipe_right')
+    if is_swipe_right == 0:
+        is_swipe_right = False
+    else:
+        is_swipe_right = True
+
+    gmaps_place_id = str(data.get('gmaps_place_id'))
+    user = User.get_user_id_by_pairing_code(session['user_pairing_code'])
+
+    place = Place.get_place_by_gmaps_place_id(gmaps_place_id=gmaps_place_id)
+    UserPlace.update_swipe(user_id=user.id, place_id=place.id, is_swipe_right=is_swipe_right)
+
+    resp = make_response('', 204)
+    return resp

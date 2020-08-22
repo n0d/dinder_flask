@@ -8,10 +8,13 @@ class Carousel {
         this.isInfoView = false
         this.isRightSwipe = false
         this.isLeftSwipe = false
-        // add first two cards programmatically
+        // add first two cards programmatically. the second call here is the only push() call with the is_offset = 1.
+        // since the first two requests happen at nearly the same time, this offsets the result by one so that
+        // two different restaurants are returned.
         this.push()
-        this.push()
+        this.push(1)
 
+        this.gmaps_place_id = ''
         /* need to save these values for populating info below cards.
            when push() is called, we can get the data from /get_card and populate the card at the time of the call.
            however, /get_card is called one card ahead, we need to save these values to populate them correctly when
@@ -23,6 +26,8 @@ class Carousel {
         this.restaurantDescription = ''
         this.restaurantPriceLevel = ''
         this.restaurantRating = ''
+        this.restaurantUserRatingsTotal = ''
+
     }
 
     handle() {
@@ -169,7 +174,12 @@ class Carousel {
     }
 
     throwCard(posX, deg) {
-
+        //post swipe direction to DB
+        let isRightSwipe = 0
+        if (this.isRightSwipe) {
+            isRightSwipe = 1;
+        }
+        postSwipe(this.topCard.getAttribute('gmaps_place_id'), isRightSwipe);
         this.topCard.style.transition = 'transform 200ms ease-out'
         this.topCard.style.transform =
             'translateX(' + posX + 'px) rotate(' + deg + 'deg)'
@@ -192,7 +202,14 @@ class Carousel {
             this.board.removeChild(this.topCard)
 
             //set below card values to the nextCard (saved in JS variables)
-            this.setBelowCardInfo(this.restaurantName, this.restaurantType, this.restaurantMilesAway, this.restaurantDescription, this.restaurantPriceLevel, this.restaurantRating)
+            this.setBelowCardInfo(
+                this.restaurantName,
+                this.restaurantType,
+                this.restaurantMilesAway,
+                this.restaurantDescription,
+                this.restaurantPriceLevel,
+                this.restaurantRating,
+                this.restaurantUserRatingsTotal)
 
             // add new card
             this.push()
@@ -214,11 +231,11 @@ class Carousel {
 
         //bottom 1/4 of screen is a bottom tap.
         this.isTappingBottom =
-            (e.center.y - bounds.top) < this.topCard.clientHeight * .75 ? false : true
+            (e.center.y - bounds.top) >= this.topCard.clientHeight * .75
 
         //split screen vertically in half for left/right taps.
         this.isTappingLeft =
-            (e.center.x - bounds.left) > this.topCard.clientWidth * .5 ? false : true
+            (e.center.x - bounds.left) <= this.topCard.clientWidth * .5
 
         if (this.isTappingBottom && !this.isInfoView) {
             // console.log('tap bottom')
@@ -326,14 +343,12 @@ class Carousel {
 
             // check threshold and movement direction
             if (propX > 0.25 && e.direction === Hammer.DIRECTION_RIGHT) {
-
-                //posX
+                this.isRightSwipe = true
                 this.throwCard(this.board.clientWidth, deg)
                 openMatchOverlay()
 
             } else if (propX < -0.25 && e.direction === Hammer.DIRECTION_LEFT) {
-
-                //posX
+                this.isLeftSwipe = true
                 this.throwCard(-(this.board.clientWidth + this.topCard.clientWidth), deg)
             } else {
                 // reset cards position and size
@@ -345,16 +360,37 @@ class Carousel {
         }
     }
 
-    setBelowCardInfo(restaurantName, restaurantType, restaurantMilesAway, restaurantDescription, restaurantPriceLevel, restaurandRating) {
+    setBelowCardInfo(restaurantName,
+                     restaurantType,
+                     restaurantMilesAway,
+                     restaurantDescription,
+                     restaurantPriceLevel,
+                     restaurantRating,
+                     userRatingsTotal) {
         document.getElementById('restaurantNameBelowCard').innerHTML = restaurantName
-        document.getElementById('restaurantTypeBelowCard').innerHTML = '<span style="color:gray"><i class="fas fa-dollar-sign"></i><i class="fas fa-dollar-sign"></i></span> ' + restaurantType
+
         document.getElementById('restaurantMilesAwayBelowCard').innerHTML = '<i class="fas fa-map-marker-alt"></i> ' + restaurantMilesAway
         document.getElementById('restaurantDescriptionBelowCard').innerHTML = restaurantDescription
+        setRatingStars('restaurantRatingBelowCard', restaurantRating)
 
-        setRatingStars('restaurantRatingBelowCard', restaurandRating)
+        if (restaurantPriceLevel) {
+            let price_level_str = '<span style="color:gray">'
+            for (var i = 0; i < parseInt(restaurantPriceLevel); i++) {
+                price_level_str += '<i class="fas fa-dollar-sign"></i>'
+            }
+            price_level_str += '</span>'
+
+            document.getElementById('restaurantTypeBelowCard').innerHTML = price_level_str + ' - ' + restaurantType
+        }
+        else {
+            document.getElementById('restaurantTypeBelowCard').innerHTML = restaurantType
+        }
+
+
+        document.getElementById('userRatings').innerHTML = '(' + userRatingsTotal + ')'
     }
 
-    push() {
+    push(is_offset=0) {
         //save instance of Carousel class to a variable, so that we can call it in the /get_card callback.
         //see https://stackoverflow.com/questions/4018461/unable-to-use-class-methods-for-callbacks-in-javascript
         var self = this;
@@ -376,7 +412,8 @@ class Carousel {
 
             data: JSON.stringify({
                 "lat": cookie_lat,
-                "lng": cookie_lng
+                "lng": cookie_lng,
+                "is_offset": is_offset
             }),
             contentType: "application/json; charset=utf-8",
             dataType: "json",
@@ -386,6 +423,8 @@ class Carousel {
                 self.restaurantDescription = result.restaurant_description
                 self.restaurantRating = result.rating
                 self.restaurantPriceLevel = result.price_level
+                self.restaurantUserRatingsTotal = result.user_ratings_total
+                self.gmaps_place_id = result.gmaps_place_id
 
                 let miles_away_str = ''
                 if (result.distance === '0') {
@@ -488,11 +527,20 @@ class Carousel {
 
                 card.style.backgroundImage = "url(" + images[currImageArrayIndex][0].src + ")"
 
+                card.setAttribute('gmaps_place_id', self.gmaps_place_id)
+
                 //childelementcount=4 for the first push() when the site opens. populate below card info here,
                 //and when a card is thrown.
                 if (board.childElementCount === 4) {
                     card.id = 'card_0'
-                    self.setBelowCardInfo(self.restaurantName, self.restaurantType, self.restaurantMilesAway, self.restaurantDescription, self.restaurantPriceLevel, self.restaurantRating)
+                    self.setBelowCardInfo(
+                        self.restaurantName,
+                        self.restaurantType,
+                        self.restaurantMilesAway,
+                        self.restaurantDescription,
+                        self.restaurantPriceLevel,
+                        self.restaurantRating,
+                        self.restaurantUserRatingsTotal)
                 } else {
                     $('#board').children().eq(0).attr('id', 'card_0')
                     card.id = 'card_1'
