@@ -140,6 +140,7 @@ input[type="text"]
     margin-top:8vh;
     border: 5px solid #bbb;
     width: 30vh;
+    height: 30vh;
 }
 
 /* Position the content inside the overlay */

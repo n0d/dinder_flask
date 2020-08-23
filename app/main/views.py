@@ -229,18 +229,23 @@ def post_swipe():
     if is_swipe_right and UserPlace.check_if_match_user_swiped_right(user_id_matched=user.user_id_matched,
                                                                      place_id=place.id):
         # need to pass place name and first photo URL.
-        place_json = json.loads(place['json_string'])
+        place_json = json.loads(place.json_string)
 
+        photo_url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=640&maxheight=640&photoreference= ' \
+                   + place_json['photos'][0]['photo_reference'] \
+                   + '&key=' + current_app.config['GOOGLE_API_KEY']
         # publish to user
         sse.publish({'restaurant_name': place_json['name'],
-                     'photo_url_0': place_json['photos'][0],
+                     'photo_url': photo_url,
+                     'google_place_url':place_json['url'],
                      'event_name': 'match'},
                     channel=user.user_pairing_code)
 
         # publish to matched user
-        user_matched = User.get_by_id(user.id)
+        user_matched = User.get_by_id(user.user_id_matched)
         sse.publish({'restaurant_name': place_json['name'],
-                     'photo_url_0': place_json['photos'][0],
+                     'photo_url': photo_url,
+                     'google_place_url': place_json['url'],
                      'event_name': 'match'},
                     channel=user_matched.user_pairing_code)
 

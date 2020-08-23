@@ -67,11 +67,11 @@
                     </div>
                 </div>
                 <div id="matchMessage" class="overlayMessage">
-                    <h1>You and Bob both like Smokin' Oak!</h1>
+                    <h1 id="matchMessageHeader"></h1>
                 </div>
-                <img class="u-max-full-width" src="https://picsum.photos/600/?random=" + Math.round(Math.random() * 1000000)>
+                <img id = 'matchImg' class="u-max-full-width" >
                 <div  class="row" >
-                    <button class=".overlayAcceptButton" id="reviewMatchRestaurantButton">See More</button>
+                    <a id="linkToGooglePlaceURL" target="_blank"><button class="overlayAcceptButton" id="reviewMatchRestaurantButton">See More</button></a>
                 </div>
                 <div id="keepSwipingButton" class="row noText" >
                     <h1 >Keep swiping</h1>
@@ -170,7 +170,7 @@
                             document.getElementById('pairedInfo').style.border = '1px solid gray'
                         }
                         else if (data.event_name === 'match') {
-                            openMatchOverlay()
+                            openMatchOverlay(data.restaurant_name, data.photo_url, data.google_place_url)
                         }
                         console.log(data)
                     }
@@ -393,8 +393,12 @@
             }
         });
 
-        function openMatchOverlay() {
+        function openMatchOverlay(restaurant_name, photo_url, google_place_url) {
+            document.getElementById('matchMessageHeader').innerText = 'You both like ' + restaurant_name  +'!'
+            document.getElementById('matchImg').src = photo_url
+            document.getElementById('linkToGooglePlaceURL').href = google_place_url
             document.getElementById('match-overlay').style.height = "100%";
+
         }
 
         function openPairOverlay(message) {

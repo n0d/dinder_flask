@@ -120,6 +120,4 @@ class UserPlace(SurrogatePK, db.Model):
 
     @staticmethod
     def check_if_match_user_swiped_right(user_id_matched, place_id):
-        if UserPlace.query.filter_by(user_id=user_id_matched, place_id=place_id, is_swipe_right=true).first():
-            return True
-        return False
+        return UserPlace.query.filter_by(user_id=user_id_matched, place_id=place_id, is_swipe_right=True).first()
