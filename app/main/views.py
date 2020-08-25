@@ -37,6 +37,8 @@ def create_user_if_not_exists():
         if matched_user:
             matched_user_pairing_code = matched_user.user_pairing_code
 
+    # clear t_user_place table for the user
+    UserPlace.delete_user_place_without_swipe_for_user_id(user.id)
     # session variable used throughout app.
     session['user_pairing_code'] = user.user_pairing_code
 
@@ -92,9 +94,16 @@ def pair_accept():
 
     if user_1 and user_2:
         # match the users together and commit to db
-        user_1.user_id_matched = user_2.id
-        user_2.user_id_matched = user_1.id
-        db.session.commit()
+        # user_1.user_id_matched = user_2.id
+        # user_2.user_id_matched = user_1.id
+        # db.session.commit()
+
+        User.pair_user_ids(user_1, user_2)
+
+        # clear t_user_place table for the user
+        UserPlace.delete_all_user_place_for_user_id(user_1.id)
+        UserPlace.delete_all_user_place_for_user_id(user_2.id)
+
         resp = make_response('', 204)
 
         # publish SSE to the user that made the initial request that the other person accepted and that it was
@@ -108,55 +117,71 @@ def pair_accept():
         return resp
 
 
+def get_place(user, lat, lng, num_results):
+    place_array = Place.get_nearby_place(
+        user_id=user.id,
+        lat=lat,
+        lng=lng,
+        within_x_miles=5,
+        num_results=num_results)
+    if place_array:
+        result_array = []
+        for place in place_array:
+            user_place = UserPlace.get_user_place_by_user_id_and_place_id(user.id, place['id'])
+            if not user_place:
+                UserPlace.insert_user_place(user.id, place['id'])
+
+            place_json = json.loads(place['json_string'])
+            photo_array = []
+            for idx, photo_item in enumerate(place_json['photos'][:4]):
+                photo_array.append({'photo_url_' + str(idx): photo_item['photo_url']})
+
+            price_level = ''
+            if 'price_level' in place_json:
+                price_level = place_json['price_level']
+
+            rating = ''
+            if 'rating' in place_json:
+                rating = place_json['rating']
+
+            result_array.append({
+                'gmaps_place_id': str(place['gmaps_place_id']),
+                'distance': str(floor(place['distance'])),
+                'name': place_json['name'],
+                'restaurant_type': place_json['restaurant_type'],
+                'restaurant_description': place_json['restaurant_description'],
+                'price_level': price_level,
+                'rating': rating,
+                'user_ratings_total': place_json['user_ratings_total'],
+                'photo_urls': photo_array
+            })
+
+        return result_array
+
+
 @main.route('/get_card', methods=['POST'])
 def get_card():
     gmaps = googlemaps.Client(key=current_app.config['GOOGLE_API_KEY'])
     data = ast.literal_eval(request.data.decode("utf-8"))
     lat = str(data.get('lat'))
     lng = str(data.get('lng'))
-    is_offset = data.get('is_offset')
+    num_cards = str(data.get('num_cards'))
 
     # check places table first
     user = User.get_user_id_by_pairing_code(session['user_pairing_code'])
-    place = Place.get_nearby_place(user.id, lat, lng, 5, is_offset)
-    if place:
-        user_place = UserPlace.get_user_place_by_user_id_and_place_id(user.id, place['id'])
-        if not user_place:
-            UserPlace.insert_user_place(user.id, place['id'])
-
-        place_json = json.loads(place['json_string'])
-        photo_array = []
-        for idx, photo_item in enumerate(place_json['photos'][:4]):
-            photo_array.append({'photo_url_' + str(idx): photo_item['photo_url']})
-
-        price_level = ''
-        if 'price_level' in place_json:
-            price_level = place_json['price_level']
-
-        rating = ''
-        if 'rating' in place_json:
-            rating = place_json['rating']
-
-        d = {'gmaps_place_id': str(place['gmaps_place_id']),
-             'distance': str(floor(place['distance'])),
-             'name': place_json['name'],
-             'restaurant_type': place_json['restaurant_type'],
-             'restaurant_description': place_json['restaurant_description'],
-             'price_level': price_level,
-             'rating': rating,
-             'user_ratings_total': place_json['user_ratings_total'],
-             'photo_urls': photo_array}
-        return d
+    result_array = get_place(user, lat, lng, num_cards)
+    if result_array:
+        return jsonify(result_array)
     else:
-        # no nearby restaurants in the database. go gather some data from google.
         # basic idea for how to implement this: return the first two results (need to handle this with the push()
         # command in carousel.js. So call the /api/place/nearbysearch, loop through the first two and get
         # details/photos, then make the remaining 18 (or whatever the # is) a celery task. these should be
         # in the database by the time the user has swiped through a few cards and easy to request.
         r = gmaps.places_nearby(location=(lat, lng),
                                 open_now=True,
-                                radius=8000,
-                                type='restaurant')
+                                radius=8000,  # 8000 meters, ~5 miles
+                                type='restaurant',
+                                )
         for item in r['results']:
             # merge places API result with details request
             merged_json = item
@@ -172,7 +197,7 @@ def get_card():
             # images on the javascript side.
             for photo_item in detail_item['photos']:
                 photo_item[
-                    'photo_url'] = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=640&maxheight=640&photoreference= ' \
+                    'photo_url'] = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=700&maxheight=700&photoreference= ' \
                                    + photo_item['photo_reference'] \
                                    + '&key=' + current_app.config['GOOGLE_API_KEY']
             merged_json['photos'] = detail_item['photos']
@@ -190,6 +215,9 @@ def get_card():
                 restaurant_type = restaurant_type.replace('\\', '')
                 restaurant_type = restaurant_type.title()
 
+            if not restaurant_type:
+                restaurant_type = 'Restaurant'
+
             merged_json['restaurant_type'] = restaurant_type
 
             split = req.split(r'\n,[null,\"', 1)  # prefix r is string literal
@@ -201,11 +229,20 @@ def get_card():
                 restaurant_description = restaurant_description.replace('\\\\u0026', '&')
                 restaurant_description = restaurant_description.replace('\\', '')
 
+            if not restaurant_description:
+                restaurant_description = 'No description available.'
+
             merged_json['restaurant_description'] = restaurant_description
 
             Place.insert_place(item['place_id'], item['geometry']['location']['lat'],
                                item['geometry']['location']['lng'],
                                json.dumps(merged_json))
+        result_array = get_place(user, lat, lng, num_cards)
+        if result_array:
+            return jsonify(result_array)
+        else:
+            resp = make_response('', 204)
+            return resp
 
 
 # user has swiped left/right on a restaurant. post the swipe action to the DB and check
@@ -231,13 +268,13 @@ def post_swipe():
         # need to pass place name and first photo URL.
         place_json = json.loads(place.json_string)
 
-        photo_url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=640&maxheight=640&photoreference= ' \
-                   + place_json['photos'][0]['photo_reference'] \
-                   + '&key=' + current_app.config['GOOGLE_API_KEY']
+        photo_url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=700&maxheight=700&photoreference= ' \
+                    + place_json['photos'][0]['photo_reference'] \
+                    + '&key=' + current_app.config['GOOGLE_API_KEY']
         # publish to user
         sse.publish({'restaurant_name': place_json['name'],
                      'photo_url': photo_url,
-                     'google_place_url':place_json['url'],
+                     'google_place_url': place_json['url'],
                      'event_name': 'match'},
                     channel=user.user_pairing_code)
 

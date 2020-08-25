@@ -37,6 +37,12 @@ class User(SurrogatePK, db.Model):
         user = User.query.filter_by(user_pairing_code=user_pairing_code).first()
         return user
 
+    @staticmethod
+    def pair_user_ids(user_1, user_2):
+        user_1.user_id_matched = user_2.id
+        user_2.user_id_matched = user_1.id
+        db.session.commit()
+
 
 class Place(SurrogatePK, db.Model):
     __tablename__ = 't_place'
@@ -53,8 +59,10 @@ class Place(SurrogatePK, db.Model):
             lng=lng,
             json_string=json_string
         )
-        db.session.add(place)
-        db.session.commit()
+        # check if place already exists, if so, don't insert.
+        if not Place.get_place_by_gmaps_place_id(gmaps_place_id):
+            db.session.add(place)
+            db.session.commit()
 
     @staticmethod
     def get_place_by_gmaps_place_id(gmaps_place_id):
@@ -64,18 +72,18 @@ class Place(SurrogatePK, db.Model):
     # relies on postgres extensions "cube" and "earthdistance".
     # point function parameters are (longitude, latitude).
     @staticmethod
-    def get_nearby_place(user_id, lat, lng, within_x_miles, is_offset):
+    def get_nearby_place(user_id, lat, lng, within_x_miles, num_results):
         sql_str = 'SELECT id, gmaps_place_id, ROUND(CAST(POINT(lng, lat) <@> POINT(-122.6761, 45.6257) AS NUMERIC), 1) AS distance, json_string ' \
                   'FROM t_place tp ' \
-                  'WHERE NOT EXISTS (SELECT 1 FROM t_user_place tup WHERE tup.place_id = tp.id AND tup.user_id = ' + str(user_id) + ') ' \
-                  'GROUP BY id, gmaps_place_id, lng, lat ' \
-                  'HAVING (point(lng, lat) <@> point(' + str(lng) + ', ' + str(lat) + ')) < ' + str(within_x_miles) + ' ' \
-                              'ORDER BY distance ' \
-                              'LIMIT 1 '
-        if is_offset:
-            sql_str += 'OFFSET 1;'
-        else:
-            sql_str += ';'
+                  'WHERE NOT EXISTS (' \
+                      'SELECT 1 ' \
+                      'FROM t_user_place tup ' \
+                      'WHERE tup.place_id = tp.id ' \
+                          'AND tup.user_id = ' + str(user_id) + ') ' \
+                                                        'GROUP BY id, gmaps_place_id, lng, lat ' \
+                                                        'HAVING (point(lng, lat) <@> point(' + str(lng) + ', ' + str(lat) + ')) < ' + str(within_x_miles) + ' ' \
+                                                   'ORDER BY distance ' \
+                                                   'LIMIT ' + str(num_results) + ';'
 
         resultproxy = db.engine.execute(text(sql_str))
 
@@ -85,11 +93,11 @@ class Place(SurrogatePK, db.Model):
             # rowproxy.items() returns an array like [(key0, value0), (key1, value1)]
             for column, value in rowproxy.items():
                 d = {**d, **{column: value}}
-        result_array.append(d)
+            result_array.append(d)
         if not d:
             return []
         else:
-            return result_array[0]
+            return result_array
 
 
 # places that user swiped right on.
@@ -121,3 +129,13 @@ class UserPlace(SurrogatePK, db.Model):
     @staticmethod
     def check_if_match_user_swiped_right(user_id_matched, place_id):
         return UserPlace.query.filter_by(user_id=user_id_matched, place_id=place_id, is_swipe_right=True).first()
+
+    @staticmethod
+    def delete_user_place_without_swipe_for_user_id(user_id):
+        UserPlace.query.filter_by(user_id=user_id, is_swipe_right=None).delete()
+        db.session.commit()
+
+    @staticmethod
+    def delete_all_user_place_for_user_id(user_id):
+        UserPlace.query.filter_by(user_id=user_id).delete()
+        db.session.commit()
