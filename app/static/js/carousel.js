@@ -371,13 +371,13 @@ class Carousel {
 
             //set below card values to the nextCard (saved in JS variables)
             this.setBelowCardInfo(
-                this.restaurantName,
-                this.restaurantType,
-                this.restaurantMilesAway,
-                this.restaurantDescription,
-                this.restaurantPriceLevel,
-                this.restaurantRating,
-                this.restaurantUserRatingsTotal)
+                self.restaurantName,
+                self.restaurantType,
+                self.restaurantMilesAway,
+                self.restaurantDescription,
+                self.restaurantPriceLevel,
+                self.restaurantRating,
+                self.restaurantUserRatingsTotal)
 
             // add new card
             this.getCards(1)

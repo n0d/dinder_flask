@@ -425,14 +425,16 @@
                 background_color = 'white'
             }
 
-            for (var i = 1; i <= spans.length - 1; i++) {
-                if (floatRating >= i) {
-                    spans[i-1].style.color='orange';
+            for (var i = 0; i <= 4; i++) {
+                if (floatRating >= (i + 1)) {
+                    spans[i].style.cssText = 'background: none; \
+                                              -webkit-text-fill-color: initial; \
+                                              color: orange'
                 }
-                else if (floatRating < i && floatRating > (i-1)) {
+                else if (floatRating < (i + 1) && floatRating > i) {
                     dec = (floatRating % 1).toFixed(1)
                     percent_left = dec * 100
-                    spans[i-1].style.cssText = 'background: -webkit-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
+                    spans[i].style.cssText = 'background: -webkit-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
                                                 background: -moz-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
                                                 background: -ms-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
                                                 background: -linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
@@ -443,7 +445,9 @@
                                                  text-shadow: none;'
                     }
                 else {
-                    spans[i-1].style.color=background_color
+                    spans[i].style.cssText = 'background: none; \
+                                              -webkit-text-fill-color: initial; \
+                                              color: ' + background_color
                 }
             }
         }

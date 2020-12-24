@@ -123,8 +123,9 @@ class UserPlace(SurrogatePK, db.Model):
     @staticmethod
     def update_swipe(user_id, place_id, is_swipe_right):
         user_place = UserPlace.query.filter_by(user_id=user_id, place_id=place_id).first()
-        user_place.is_swipe_right = is_swipe_right
-        db.session.commit()
+        if user_place:
+            user_place.is_swipe_right = is_swipe_right
+            db.session.commit()
 
     @staticmethod
     def check_if_match_user_swiped_right(user_id_matched, place_id):
