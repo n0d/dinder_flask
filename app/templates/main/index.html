@@ -146,10 +146,10 @@
                     user_pairing_code = result.user_pairing_code
                     matched_user_pairing_code = result.matched_user_pairing_code
 
-                    $('#yourCode').find('h2').text(result.user_pairing_code)
+                    $('#yourCode').find('h2').text(result.user_pairing_code.replace('\u0030', '\u00D8'))
                     //if user is matched, set the info box on the account page accordingly.
                     if (result.matched_user_pairing_code) {
-                        $('#pairedInfo').find('h2').text('Paired with User "' + result.matched_user_pairing_code + '"')
+                        $('#pairedInfo').find('h2').text('Paired with User "' + result.matched_user_pairing_code.replace('\u0030', '\u00D8') + '"')
                         document.getElementById('pairedInfo').style.border = '1px solid gray'
                     }
 
@@ -164,11 +164,11 @@
                         }
                         else if (data.event_name === 'pair_accept') {
                             user_code_accepted = data.user_code;
-                            openPairOverlay('Paired with user "' + data.user_code + '".')
+                            openPairOverlay('Paired with user "' + data.user_code.replace('\u0030', '\u00D8') + '".')
                             document.getElementById('acceptPairButton').style.visibility='hidden'
                             document.getElementById('acceptPairButton').style.pointerEvents='none'
                             document.getElementById('dontPairButton').innerText = 'OK'
-                            $('#pairedInfo').find('h2').text('Paired with User "' + data.user_code + '"')
+                            $('#pairedInfo').find('h2').text('Paired with User "' + data.user_code.replace('\u0030', '\u00D8') + '"')
                             document.getElementById('pairedInfo').style.border = '1px solid gray'
                         }
                         else if (data.event_name === 'match') {
@@ -352,7 +352,7 @@
                     document.getElementById('acceptPairButton').style.visibility='hidden'
                     document.getElementById('acceptPairButton').style.pointerEvents='none'
                     document.getElementById('dontPairButton').innerText = 'OK'
-                    $('#pairedInfo').find('h2').text('Paired with User "' + user_code_requesting + '"')
+                    $('#pairedInfo').find('h2').text('Paired with User "' + user_code_requesting.replace('\u0030', '\u00D8') + '"')
                     document.getElementById('pairedInfo').style.border = '1px solid gray'
                     console.log(result);
                 },
