@@ -153,7 +153,8 @@ def get_place(user, lat, lng, num_results):
                 'price_level': price_level,
                 'rating': rating,
                 'user_ratings_total': place_json['user_ratings_total'],
-                'photo_urls': photo_array
+                'photo_urls': photo_array,
+                'url': place_json['url']
             })
 
         return result_array

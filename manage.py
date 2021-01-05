@@ -32,31 +32,31 @@ def make_shell_context():
         sess=sess)
 
 
-class GunicornServer(Command):
-    """Run the app within Gunicorn"""
-
-    def get_options(self):
-        from gunicorn.config import make_settings
-
-        settings = make_settings()
-        options = []
-
-        for setting, klass in settings.items():
-            if klass.cli:
-                if klass.const is not None:
-                    options.append(Option(*klass.cli, const=klass.const, action=klass.action))
-                else:
-                    options.append(Option(*klass.cli, action=klass.action))
-
-        return options
-
-    def run(self, *args, **kwargs):
-        run_args = os.sys.argv[2:]
-        # !!!!! Change your app here !!!!!
-        run_args.append('--worker-class')
-        run_args.append('gevent')
-        run_args.append('manage:app')
-        subprocess.Popen([os.path.join(os.path.dirname(os.sys.executable), 'gunicorn')] + run_args).wait()
+# class GunicornServer(Command):
+#     """Run the app within Gunicorn"""
+#
+#     def get_options(self):
+#         from gunicorn.config import make_settings
+#
+#         settings = make_settings()
+#         options = []
+#
+#         for setting, klass in settings.items():
+#             if klass.cli:
+#                 if klass.const is not None:
+#                     options.append(Option(*klass.cli, const=klass.const, action=klass.action))
+#                 else:
+#                     options.append(Option(*klass.cli, action=klass.action))
+#
+#         return options
+#
+#     def run(self, *args, **kwargs):
+#         run_args = os.sys.argv[2:]
+#         # !!!!! Change your app here !!!!!
+#         run_args.append('--worker-class')
+#         run_args.append('gevent')
+#         run_args.append('manage:app')
+#         subprocess.Popen([os.path.join(os.path.dirname(os.sys.executable), 'gunicorn')] + run_args).wait()
 
 
 manager.add_command("shell", Shell(make_context=make_shell_context))

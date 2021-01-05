@@ -144,6 +144,8 @@
                 success: function(result) {
 
                     user_pairing_code = result.user_pairing_code
+                    matched_user_pairing_code = result.matched_user_pairing_code
+
                     $('#yourCode').find('h2').text(result.user_pairing_code)
                     //if user is matched, set the info box on the account page accordingly.
                     if (result.matched_user_pairing_code) {
@@ -170,7 +172,7 @@
                             document.getElementById('pairedInfo').style.border = '1px solid gray'
                         }
                         else if (data.event_name === 'match') {
-                            openMatchOverlay(data.restaurant_name, data.photo_url, data.google_place_url)
+                            openMatchOverlay(data.restaurant_name, data.photo_url, data.google_place_url, matched_user_pairing_code)
                         }
                         console.log(data)
                     }
@@ -278,7 +280,12 @@
             } else {
                 carousel.throwCard(carousel.board.clientWidth, 0)
             }
-            openMatchOverlay()
+            if (!matched_user_pairing_code) {
+                openMatchOverlay(
+                    carousel.topCard.getAttribute('restaurant_name_on_card'),
+                    carousel.topCard.getAttribute('photo_url'),
+                    carousel.topCard.getAttribute('url'))
+            }
         }
 
         function pairRequest() {
@@ -311,7 +318,12 @@
                 contentType:"application/json; charset=utf-8",
                 dataType: "json",
                 success: function(result) {
-                    console.log(result);
+                    if (!matched_user_pairing_code) {
+                        openMatchOverlay(
+                            carousel.topCard.getAttribute('restaurant_name_on_card'),
+                            carousel.topCard.getAttribute('photo_url'),
+                            carousel.topCard.getAttribute('url'))
+                    }
                 },
                 error: function(result) {
                     console.log(result);
@@ -394,11 +406,15 @@
         });
 
         function openMatchOverlay(restaurant_name, photo_url, google_place_url) {
-            document.getElementById('matchMessageHeader').innerText = 'You both like ' + restaurant_name  +'!'
+            if (matched_user_pairing_code) {
+                document.getElementById('matchMessageHeader').innerText = 'You both like ' + restaurant_name  +'!'
+            }
+            else {
+                document.getElementById('matchMessageHeader').innerText = restaurant_name
+            }
             document.getElementById('matchImg').src = photo_url
             document.getElementById('linkToGooglePlaceURL').href = google_place_url
             document.getElementById('match-overlay').style.height = "100%";
-
         }
 
         function openPairOverlay(message) {

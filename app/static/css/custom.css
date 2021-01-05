@@ -248,6 +248,7 @@ input[type="text"]
     width: 7vh;
     border-radius: 50%;
     background-color: orange;
+    z-index:10;
 }
 
 #swipeLeftButton {
@@ -309,6 +310,7 @@ input[type="text"]
     height:75px;
     color:white;
     text-align:left;
+    white-space: nowrap;
 }
 
 #restaurantRatingOnCard {
@@ -356,4 +358,9 @@ input[type="text"]
     color:black;
     text-align:left;
     display:none;
+}
+
+#noRestaurantsMessage {
+    padding-top: 40vh;
+    font-size: 2vh;
 }
