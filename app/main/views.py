@@ -1,13 +1,13 @@
 import ast
 from flask import render_template, redirect, session, make_response, request, jsonify, current_app
 from flask_sse import sse
-from .. import db
 import json
 from . import main
 from ..models import User, Place, UserPlace
 import googlemaps
 import requests
 from math import floor
+from app import celery
 
 
 @main.route('/', methods=['GET'])
@@ -93,11 +93,6 @@ def pair_accept():
     user_2 = User.query.filter_by(user_pairing_code=user_pairing_code_2).first()
 
     if user_1 and user_2:
-        # match the users together and commit to db
-        # user_1.user_id_matched = user_2.id
-        # user_2.user_id_matched = user_1.id
-        # db.session.commit()
-
         User.pair_user_ids(user_1, user_2)
 
         # clear t_user_place table for the user
@@ -160,6 +155,13 @@ def get_place(user, lat, lng, num_results):
         return result_array
 
 
+@celery.task(bind=True)
+def insert_to_db_async(self, items, google_api_key):
+    gmaps = googlemaps.Client(key=google_api_key)
+    for item in items:
+        get_place_details_and_insert_to_db(gmaps, item, google_api_key)
+
+
 @main.route('/get_card', methods=['POST'])
 def get_card():
     gmaps = googlemaps.Client(key=current_app.config['GOOGLE_API_KEY'])
@@ -178,72 +180,80 @@ def get_card():
         # command in carousel.js. So call the /api/place/nearbysearch, loop through the first two and get
         # details/photos, then make the remaining 18 (or whatever the # is) a celery task. these should be
         # in the database by the time the user has swiped through a few cards and easy to request.
-        r = gmaps.places_nearby(location=(lat, lng),
+        response = gmaps.places_nearby(location=(lat, lng),
                                 open_now=True,
                                 radius=8000,  # 8000 meters, ~5 miles
                                 type='restaurant',
                                 )
-        for item in r['results']:
-            # merge places API result with details request
-            merged_json = item
-            detail_r = gmaps.place(item['place_id'])
 
-            detail_item = detail_r['result']
+        for item in response['results'][:2]: #first two
+            get_place_details_and_insert_to_db(gmaps, item, current_app.config['GOOGLE_API_KEY'])
 
-            for key in detail_item:
-                if not key in merged_json:
-                    merged_json[key] = detail_item[key]
+        insert_to_db_async.delay(response['results'][2:], current_app.config['GOOGLE_API_KEY'])
 
-            # google maps places photo API returns a photo. just building the URL and then pre-loading
-            # images on the javascript side.
-            for photo_item in detail_item['photos']:
-                photo_item[
-                    'photo_url'] = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=700&maxheight=700&photoreference= ' \
-                                   + photo_item['photo_reference'] \
-                                   + '&key=' + current_app.config['GOOGLE_API_KEY']
-            merged_json['photos'] = detail_item['photos']
-
-            # get restaurant type/description from URL from the API (this info isn't available in API currently).
-            req = requests.get(detail_item['url']).text
-
-            split = req.split(r'\",null,[\"', 1)  # [1]  # prefix r is string literal
-            if split.__len__() == 1:
-                restaurant_type = ''
-            else:
-                split = split[1]
-                restaurant_type = split.split('\"', 1)[0]
-                restaurant_type = restaurant_type.replace('\\\\u0026', '&')
-                restaurant_type = restaurant_type.replace('\\', '')
-                restaurant_type = restaurant_type.title()
-
-            if not restaurant_type:
-                restaurant_type = 'Restaurant'
-
-            merged_json['restaurant_type'] = restaurant_type
-
-            split = req.split(r'\n,[null,\"', 1)  # prefix r is string literal
-            if split.__len__() == 1:
-                restaurant_description = ''
-            else:
-                split = split[1]
-                restaurant_description = split.split('\"', 1)[0]
-                restaurant_description = restaurant_description.replace('\\\\u0026', '&')
-                restaurant_description = restaurant_description.replace('\\', '')
-
-            if not restaurant_description:
-                restaurant_description = 'No description available.'
-
-            merged_json['restaurant_description'] = restaurant_description
-
-            Place.insert_place(item['place_id'], item['geometry']['location']['lat'],
-                               item['geometry']['location']['lng'],
-                               json.dumps(merged_json))
         result_array = get_place(user, lat, lng, num_cards)
         if result_array:
             return jsonify(result_array)
         else:
             resp = make_response('', 204)
             return resp
+
+
+# merge places API result with details request
+def get_place_details_and_insert_to_db(gmaps, item, google_api_key):
+    merged_json = item
+    detail_response = gmaps.place(item['place_id'])
+
+    detail_item = detail_response['result']
+
+    for key in detail_item:
+        if not key in merged_json:
+            merged_json[key] = detail_item[key]
+
+    # google maps places photo API returns a photo. just building the URL and then pre-loading
+    # images on the javascript side.
+    for photo_item in detail_item['photos']:
+        photo_item[
+            'photo_url'] = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=700&maxheight=700&photoreference= ' \
+                           + photo_item['photo_reference'] \
+                           + '&key=' + google_api_key
+    merged_json['photos'] = detail_item['photos']
+
+    # get restaurant type/description from URL from the API (this info isn't available in API currently).
+    req = requests.get(detail_item['url']).text
+
+    split = req.split(r'\",null,[\"', 1)  # [1]  # prefix r is string literal
+    if split.__len__() == 1:
+        restaurant_type = ''
+    else:
+        split = split[1]
+        restaurant_type = split.split('\"', 1)[0]
+        restaurant_type = restaurant_type.replace('\\\\u0026', '&')
+        restaurant_type = restaurant_type.replace('\\', '')
+        restaurant_type = restaurant_type.title()
+
+    if not restaurant_type:
+        restaurant_type = 'Restaurant'
+
+    merged_json['restaurant_type'] = restaurant_type
+
+    split = req.split(r'\n,[null,\"', 1)  # prefix r is string literal
+    if split.__len__() == 1:
+        restaurant_description = ''
+    else:
+        split = split[1]
+        restaurant_description = split.split('\"', 1)[0]
+        restaurant_description = restaurant_description.replace('\\\\u0026', '&')
+        restaurant_description = restaurant_description.replace('\\', '')
+
+    if not restaurant_description:
+        restaurant_description = 'No description available.'
+
+    merged_json['restaurant_description'] = restaurant_description
+
+    Place.insert_place(item['place_id'], item['geometry']['location']['lat'],
+                       item['geometry']['location']['lng'],
+                       json.dumps(merged_json))
 
 
 # user has swiped left/right on a restaurant. post the swipe action to the DB and check
