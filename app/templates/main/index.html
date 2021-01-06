@@ -318,7 +318,7 @@
                 contentType:"application/json; charset=utf-8",
                 dataType: "json",
                 success: function(result) {
-                    if (!matched_user_pairing_code) {
+                    if (!matched_user_pairing_code && is_swipe_right) {
                         openMatchOverlay(
                             carousel.topCard.getAttribute('restaurant_name_on_card'),
                             carousel.topCard.getAttribute('photo_url'),

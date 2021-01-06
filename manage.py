@@ -6,7 +6,6 @@ from flaskext.markdown import Markdown
 from waitress import serve
 from flask_migrate import Migrate, MigrateCommand
 from app.models import User, Place, UserPlace
-import subprocess
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):

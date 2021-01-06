@@ -1,5 +1,4 @@
 import os
-
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -9,13 +8,15 @@ class Config:
     SESSION_SQLALCHEMY_TABLE = os.environ.get('SESSION_SQLALCHEMY_TABLE')
     SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI')
     GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
+    CELERY_BROKER_URL = os.environ.get('REDIS_URL')
+    CELERY_RESULT_BACKEND = os.environ.get('CELERY_BROKER_URL')
     DEBUG = True
     SSL_REDIRECT = False
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    @classmethod
-    def init_app(cls, app):
+    @staticmethod
+    def init_app(app):
         pass
 
 
@@ -32,7 +33,8 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('HEROKU_POSTGRESQL_RED_URL')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI')
+    # SQLALCHEMY_DATABASE_URI = os.environ.get('HEROKU_POSTGRESQL_RED_URL')
 
     @classmethod
     def init_app(cls, app):
@@ -58,7 +60,7 @@ class HerokuConfig(ProductionConfig):
 
 
 config = {
-    'dev': Config,
+    'dev': DevelopmentConfig,
     'prod': ProductionConfig,
     'heroku': HerokuConfig,
     'default': DevelopmentConfig
