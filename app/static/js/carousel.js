@@ -25,22 +25,20 @@ class Carousel {
         this.google_place_url = ''
 
         //get first 2 cards from database. success callback "pushes" cards onto the deck.
-        this.getCards(2)
+        this.getCard()
     }
 
     push(result) {
-        let card = document.createElement('div')
-        card.classList.add('card')
-
-        //childelementcount=4 for the first push() when the site opens. populate below card info here,
-        //and when a card is thrown.
-        if (board.childElementCount === 4) {
-            card.id = 'card_0'
-        } else {
-            $('#board').children().eq(0).attr('id', 'card_0')
-            card.id = 'card_1'
+        //get top card without a gmaps place ID
+        let card
+        if (document.querySelector('#board #card_0') &&
+            document.querySelector('#board #card_1') &&
+            !document.querySelector('#board #card_0').hasAttribute('gmaps_place_id')) {
+            card = board.children[1]
         }
-
+        else {
+            card = board.children[0]
+        }
         if (!result) {
             card.style.color = 'gray'
             card.style.font_size= '2.7vh'
@@ -180,7 +178,7 @@ class Carousel {
 
             //childelementcount=5 for the first push() when the site opens. populate below card info here,
             //and when a card is thrown.
-            if (board.childElementCount === 4) {
+            if (board.childElementCount === 5) {
                 this.setBelowCardInfo(
                     self.restaurantName,
                     self.restaurantType,
@@ -190,26 +188,43 @@ class Carousel {
                     self.restaurantRating,
                     self.restaurantUserRatingsTotal)
             }
-            board.insertBefore(card, board.firstChild)
 
             setRatingStars('restaurantRatingOnCard', self.restaurantRating)
 
             currImageArrayIndex = (currImageArrayIndex === 0) ? 1 : 0
-            console.log(result);
-            // handle gestures
-            this.handle()
         }
     }
 
-    getCards(numCards) {
+    getCard() {
         var self = this;
+
+        //getCard() is always called after a card is thrown. we don't want to get the next card
+        //if the top card is the 'No restaurants in area' card.
+        if (document.querySelector('#board #card_1 #noRestaurantsMessage')) {
+            return
+        }
+
+        //push the interactable cards on the front-end.
+        let card = document.createElement('div')
+        card.classList.add('card')
+
+        //childelementcount=4 for the first push() when opening the app.
+        if (board.childElementCount === 4) {
+            card.id = 'card_0'
+            board.insertBefore(card, board.firstChild)
+        } else {
+            $('#board').children().eq(0).attr('id', 'card_0')
+            card.id = 'card_1'
+            board.insertBefore(card, board.firstChild)
+            this.handle()
+        }
 
         $.ajax({
             type: "POST",
             url: "/get_card",
 
             data: JSON.stringify({
-                "num_cards": numCards,
+                "num_cards": 1,
                 "lat": cookie_lat,
                 "lng": cookie_lng
             }),
@@ -217,8 +232,9 @@ class Carousel {
             dataType: "json",
             success: function (result) {
                 if (result) {
-                    for (let i = 0; i < result.length; i++) {
-                        self.push(result[i])
+                    self.push(result[0])
+                    if (board.childElementCount === 5) {
+                        self.getCard()
                     }
                 }
                 //push empty card (no more results for user).
@@ -230,9 +246,8 @@ class Carousel {
                 console.log(result);
             },
         });
-
-
     }
+
 
     handle() {
         // list all cards
@@ -254,7 +269,6 @@ class Carousel {
             // destroy previous Hammer instance, if present
             if (this.hammer) this.hammer.destroy()
 
-            //{touchAction:'pan-y'}
             // listen for tap and pan gestures on top card
             this.hammer = new Hammer(this.topCard)
             this.hammer.add(new Hammer.Tap())
@@ -304,7 +318,10 @@ class Carousel {
     expandInfo() {
         this.isInfoView = true
         //hide restaurant info on the card (now displaying in info section)
-        this.topCard.children[3].style.display = 'none'
+        if (this.topCard.children[3]) {
+            this.topCard.children[3].style.display = 'none'
+        }
+
         //allow horizontal scroll, even when card is selected.
         this.hammer.set({touchAction: 'pan-y'})
         document.getElementById('restaurantInfoBelowCard').style.display = 'block'
@@ -392,15 +409,19 @@ class Carousel {
         this.topCard.style.transform =
             'translateX(' + posX + 'px) rotate(' + deg + 'deg)'
 
-        this.topCard.children[1].style.opacity = (posX + 475.5) / 400;
-        this.topCard.children[2].style.opacity = ((posX + 475.5) / 400) * -1;
+        if (this.topCard.children[1]) {
+            this.topCard.children[1].style.opacity = (posX + 475.5) / 400;
+            this.topCard.children[2].style.opacity = ((posX + 475.5) / 400) * -1;
+            this.topCard.children[3].style.display = 'block'
+            document.getElementById('restaurantInfoOnCard').style.display = 'block'
+        }
 
         if (document.getElementById('backToRegularViewButton')) {
             document.getElementById('backToRegularViewButton').style.display = 'none'
             document.getElementById('backToRegularViewButton').style.pointerEvents = 'none'
         }
-        this.topCard.children[3].style.display = 'block'
-        document.getElementById('restaurantInfoOnCard').style.display = 'block'
+
+
         /* disable regular vertical scrolling when in regular swipe mode */
         board.style.overflow = 'hidden'
 
@@ -422,7 +443,7 @@ class Carousel {
                 self.restaurantUserRatingsTotal)
 
             // add new card
-            this.getCards(1)
+            this.getCard()
             this.isInfoView = false
             this.isRightSwipe = false
             this.isLeftSwipe = false
@@ -438,7 +459,6 @@ class Carousel {
         let cardCurrImageArrayIndex = parseInt(this.topCard.getAttribute('currImageArrayIndex'))
 
         // get finger position.
-
         //bottom 1/4 of screen is a bottom tap.
         this.isTappingBottom =
             (e.center.y - bounds.top) >= this.topCard.clientHeight * .75
@@ -460,12 +480,13 @@ class Carousel {
                     //track the position in the image list (for the indicator tabs/bullets at the top of the images)
                     this.topCard.setAttribute('currImage', parseInt(this.topCard.getAttribute('currImage')) - 1)
 
-                    //set the opacity of the image tabs to indicate the currently selected image
-                    this.topCard.children[0].children[currImageNum - 1].style.opacity = '0.2'
-                    this.topCard.children[0].children[currImageNum - 2].style.opacity = '1'
-
-                    //update background image.
-                    this.topCard.style.backgroundImage = "url(" + images[cardCurrImageArrayIndex][currImageNum - 2].src + ")"
+                    if (this.topCard.children[0]) {
+                        //set the opacity of the image tabs to indicate the currently selected image
+                        this.topCard.children[0].children[currImageNum - 1].style.opacity = '0.2'
+                        this.topCard.children[0].children[currImageNum - 2].style.opacity = '1'
+                        //update background image.
+                        this.topCard.style.backgroundImage = "url(" + images[cardCurrImageArrayIndex][currImageNum - 2].src + ")"
+                    }
                 }
                 // console.log('tap left')
             } else {
@@ -477,12 +498,13 @@ class Carousel {
                         //track the position in the image list (for the indicator tabs/bullets at the top of the images)
                         this.topCard.setAttribute('currImage', parseInt(this.topCard.getAttribute('currImage')) + 1)
 
-                        //set the opacity of the image tabs to indicate the currently selected image
-                        this.topCard.children[0].children[currImageNum - 1].style.opacity = '0.2'
-                        this.topCard.children[0].children[currImageNum].style.opacity = '1'
-
-                        //update background image.
-                        this.topCard.style.backgroundImage = "url(" + images[cardCurrImageArrayIndex][currImageNum].src + ")"
+                        if (this.topCard.children[0]) {
+                            //set the opacity of the image tabs to indicate the currently selected image
+                            this.topCard.children[0].children[currImageNum - 1].style.opacity = '0.2'
+                            this.topCard.children[0].children[currImageNum].style.opacity = '1'
+                            //update background image.
+                            this.topCard.style.backgroundImage = "url(" + images[cardCurrImageArrayIndex][currImageNum].src + ")"
+                        }
                     }
                 }
             }
@@ -534,17 +556,21 @@ class Carousel {
         this.topCard.style.transform =
             'translateX(' + posX + 'px) translateY(' + posY + 'px) rotate(' + deg + 'deg) rotateY(0deg) scale(1)'
 
-
-        this.topCard.children[1].style.opacity = (posX + 475.5) / 400;
-        this.topCard.children[2].style.opacity = ((posX + 475.5) / 400) * -1;
+        if (this.topCard.children[1]) {
+            this.topCard.children[1].style.opacity = (posX + 475.5) / 400;
+            this.topCard.children[2].style.opacity = ((posX + 475.5) / 400) * -1;
+        }
 
         // scale up next card
         if (this.nextCard) this.nextCard.style.transform =
             'translateX(-50%) translateY(-50%) rotate(0deg) rotateY(0deg) scale(' + scale + ')'
 
         if (e.isFinal) {
-            this.topCard.children[1].style.opacity = 0;
-            this.topCard.children[2].style.opacity = 0;
+            if (this.topCard.children[1]) {
+                this.topCard.children[1].style.opacity = 0;
+                this.topCard.children[2].style.opacity = 0;
+            }
+
             this.isPanning = false
 
             // set back transition properties
