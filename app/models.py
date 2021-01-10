@@ -140,3 +140,33 @@ class UserPlace(SurrogatePK, db.Model):
     def delete_all_user_place_for_user_id(user_id):
         UserPlace.query.filter_by(user_id=user_id).delete()
         db.session.commit()
+
+
+#store lat/lng coordinates along with the next_page_token returned by Google Places API.
+class LatLngPositionAndPageToken(SurrogatePK, db.Model):
+    __tablename__ = 't_lat_lng_page_token'
+    lat = db.Column(db.Float)
+    lng = db.Column(db.Float)
+    page_token = db.Column(db.String(1000))
+    is_final_page_token = db.Column(db.Boolean, default=False)
+
+    @staticmethod
+    def get_page_token_by_lat_lng(lat, lng):
+        return LatLngPositionAndPageToken.query.filter_by(lat=lat, lng=lng).first()
+
+    @staticmethod
+    def insert_or_update_page_token(lat, lng, page_token, is_final_page_token):
+        lat_lng_page_token = LatLngPositionAndPageToken.query.filter_by(lat=lat, lng=lng).first()
+        if lat_lng_page_token:
+            if page_token:
+                lat_lng_page_token.page_token = page_token
+            if is_final_page_token:
+                lat_lng_page_token.is_final_page_token = is_final_page_token
+            db.session.commit()
+        else:
+            lat_lng_page_token = LatLngPositionAndPageToken(
+                lat=lat,
+                lng=lng,
+                page_token=page_token)
+            db.session.add(lat_lng_page_token)
+            db.session.commit()

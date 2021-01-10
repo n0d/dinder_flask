@@ -25,7 +25,17 @@ class Carousel {
         this.google_place_url = ''
 
         //get first 2 cards from database. success callback "pushes" cards onto the deck.
-        this.getCard()
+        this.getCards(2)
+    }
+
+    getMilesAway(distance) {
+        if (distance === '0') {
+            return  'Less than 1 mile away'
+        } else if (distance === '1') {
+            return '1 mile away'
+        } else {
+            return distance + ' miles away'
+        }
     }
 
     push(result) {
@@ -33,12 +43,24 @@ class Carousel {
         let card
         if (document.querySelector('#board #card_0') &&
             document.querySelector('#board #card_1') &&
-            !document.querySelector('#board #card_0').hasAttribute('gmaps_place_id')) {
+            !document.querySelector('#board #card_0').hasAttribute('gmaps_place_id'))
+        {
             card = board.children[1]
+            if (result) {
+                this.setBelowCardInfo(
+                    result.name,
+                    result.restaurant_type,
+                    this.getMilesAway(result.distance),
+                    result.restaurant_description,
+                    result.price_level,
+                    result.rating,
+                    result.user_ratings_total)
+            }
         }
         else {
             card = board.children[0]
         }
+
         if (!result) {
             card.style.color = 'gray'
             card.style.font_size= '2.7vh'
@@ -49,7 +71,7 @@ class Carousel {
             message.id = 'noRestaurantsMessage'
             message.innerHTML = 'No more restaurants open in your area.'
             card.appendChild(message)
-            board.insertBefore(card, board.firstChild)
+            // board.insertBefore(card, board.firstChild)
 
             //disable swipe left/right buttons on the "no restaurants" message card.
             document.getElementById('swipeLeftButton').style.pointerEvents = 'none'
@@ -67,16 +89,7 @@ class Carousel {
             self.gmaps_place_id = result.gmaps_place_id
             self.google_place_url = result.url
 
-            let miles_away_str = ''
-            if (result.distance === '0') {
-                miles_away_str = 'Less than 1 mile away'
-            } else if (result.distance === '1') {
-                miles_away_str = '1 mile away'
-            } else {
-                miles_away_str = result.distance + ' miles away'
-            }
-
-            self.restaurantMilesAway = miles_away_str
+            self.restaurantMilesAway = this.getMilesAway(result.distance)
 
             images[currImageArrayIndex] = new Array()
 
@@ -195,7 +208,7 @@ class Carousel {
         }
     }
 
-    getCard() {
+    getCards(num_cards) {
         var self = this;
 
         //getCard() is always called after a card is thrown. we don't want to get the next card
@@ -204,19 +217,21 @@ class Carousel {
             return
         }
 
-        //push the interactable cards on the front-end.
-        let card = document.createElement('div')
-        card.classList.add('card')
+        for (let i = 0; i < num_cards; i++) {
+            //push the interactable cards on the front-end.
+            let card = document.createElement('div')
+            card.classList.add('card')
 
-        //childelementcount=4 for the first push() when opening the app.
-        if (board.childElementCount === 4) {
-            card.id = 'card_0'
-            board.insertBefore(card, board.firstChild)
-        } else {
-            $('#board').children().eq(0).attr('id', 'card_0')
-            card.id = 'card_1'
-            board.insertBefore(card, board.firstChild)
-            this.handle()
+            //childelementcount=4 for the first push() when opening the app.
+            if (board.childElementCount === 4) {
+                card.id = 'card_0'
+                board.insertBefore(card, board.firstChild)
+            } else {
+                $('#board').children().eq(0).attr('id', 'card_0')
+                card.id = 'card_1'
+                board.insertBefore(card, board.firstChild)
+                this.handle()
+            }
         }
 
         $.ajax({
@@ -224,7 +239,7 @@ class Carousel {
             url: "/get_card",
 
             data: JSON.stringify({
-                "num_cards": 1,
+                "num_cards": num_cards,
                 "lat": cookie_lat,
                 "lng": cookie_lng
             }),
@@ -232,9 +247,8 @@ class Carousel {
             dataType: "json",
             success: function (result) {
                 if (result) {
-                    self.push(result[0])
-                    if (board.childElementCount === 5) {
-                        self.getCard()
+                    for (let i = 0; i < result.length; i++) {
+                        self.push(result[i])
                     }
                 }
                 //push empty card (no more results for user).
@@ -421,7 +435,6 @@ class Carousel {
             document.getElementById('backToRegularViewButton').style.pointerEvents = 'none'
         }
 
-
         /* disable regular vertical scrolling when in regular swipe mode */
         board.style.overflow = 'hidden'
 
@@ -432,6 +445,7 @@ class Carousel {
             // remove swiped card
             this.board.removeChild(this.topCard)
 
+            console.log('set below card info')
             //set below card values to the nextCard (saved in JS variables)
             this.setBelowCardInfo(
                 self.restaurantName,
@@ -443,7 +457,7 @@ class Carousel {
                 self.restaurantUserRatingsTotal)
 
             // add new card
-            this.getCard()
+            this.getCards(1)
             this.isInfoView = false
             this.isRightSwipe = false
             this.isLeftSwipe = false
@@ -467,7 +481,7 @@ class Carousel {
         this.isTappingLeft =
             (e.center.x - bounds.left) <= this.topCard.clientWidth * .5
 
-        if (this.isTappingBottom && !this.isInfoView) {
+        if (this.isTappingBottom && !this.isInfoView && this.topCard.getAttribute('gmaps_place_id')) {
             // console.log('tap bottom')
             window.history.pushState({url: 'info', title: 'info'}, 'info', 'info')
             this.expandInfo(e)
@@ -480,7 +494,7 @@ class Carousel {
                     //track the position in the image list (for the indicator tabs/bullets at the top of the images)
                     this.topCard.setAttribute('currImage', parseInt(this.topCard.getAttribute('currImage')) - 1)
 
-                    if (this.topCard.children[0]) {
+                    if (this.topCard.children[0] && this.topCard.getAttribute('gmaps_place_id')) {
                         //set the opacity of the image tabs to indicate the currently selected image
                         this.topCard.children[0].children[currImageNum - 1].style.opacity = '0.2'
                         this.topCard.children[0].children[currImageNum - 2].style.opacity = '1'
@@ -498,7 +512,7 @@ class Carousel {
                         //track the position in the image list (for the indicator tabs/bullets at the top of the images)
                         this.topCard.setAttribute('currImage', parseInt(this.topCard.getAttribute('currImage')) + 1)
 
-                        if (this.topCard.children[0]) {
+                        if (this.topCard.children[0] && this.topCard.getAttribute('gmaps_place_id')) {
                             //set the opacity of the image tabs to indicate the currently selected image
                             this.topCard.children[0].children[currImageNum - 1].style.opacity = '0.2'
                             this.topCard.children[0].children[currImageNum].style.opacity = '1'
@@ -513,7 +527,8 @@ class Carousel {
 
     onPanRegularView(e) {
         // console.log("panning regular view...");
-        if (!this.isPanning) {
+        //dont pan if "no restaurants" card on top
+        if (!this.isPanning && !document.querySelector('#board #card_0 #noRestaurantsMessage')) {
 
             this.isPanning = true
 
@@ -578,11 +593,11 @@ class Carousel {
             // if (this.nextCard) this.nextCard.style.transition = 'transform 100ms linear'
 
             // check threshold and movement direction
-            if (propX > 0.25 && e.direction === Hammer.DIRECTION_RIGHT) {
+            if (propX > 0.25 && e.direction === Hammer.DIRECTION_RIGHT && this.topCard.getAttribute('gmaps_place_id')) {
                 this.isRightSwipe = true
                 this.throwCard(this.board.clientWidth, deg)
 
-            } else if (propX < -0.25 && e.direction === Hammer.DIRECTION_LEFT) {
+            } else if (propX < -0.25 && e.direction === Hammer.DIRECTION_LEFT && this.topCard.getAttribute('gmaps_place_id')) {
                 this.isLeftSwipe = true
                 this.throwCard(-(this.board.clientWidth + this.topCard.clientWidth), deg)
             } else {

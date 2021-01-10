@@ -5,7 +5,7 @@ from flask_script import Manager, Shell, Server, Option, Command
 from flaskext.markdown import Markdown
 from waitress import serve
 from flask_migrate import Migrate, MigrateCommand
-from app.models import User, Place, UserPlace
+from app.models import User, Place, UserPlace, LatLngPositionAndPageToken
 
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 if os.path.exists(dotenv_path):
@@ -26,6 +26,7 @@ def make_shell_context():
         User=User,
         Place=Place,
         UserPlace=UserPlace,
+        LatLngPositionAndPageToken=LatLngPositionAndPageToken,
 
         #flask-session
         sess=sess)
@@ -69,4 +70,5 @@ manager.add_command('waitress', serve(app, host='0.0.0.0', port=8080, threads=30
 # manager.add_command('runserver', server)
 
 if __name__ == '__main__':
+
     manager.run()

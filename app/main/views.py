@@ -3,7 +3,7 @@ from flask import render_template, redirect, session, make_response, request, js
 from flask_sse import sse
 import json
 from . import main
-from ..models import User, Place, UserPlace
+from ..models import User, Place, UserPlace, LatLngPositionAndPageToken
 import googlemaps
 import requests
 from math import floor
@@ -168,30 +168,43 @@ def get_card():
     data = ast.literal_eval(request.data.decode("utf-8"))
     lat = str(data.get('lat'))
     lng = str(data.get('lng'))
-    num_cards = str(data.get('num_cards'))
+    num_cards = int(data.get('num_cards'))
 
     # check places table first
     user = User.get_user_id_by_pairing_code(session['user_pairing_code'])
     result_array = get_place(user, lat, lng, num_cards)
-    if result_array:
+    if result_array and len(result_array) == num_cards:
         return jsonify(result_array)
     else:
-        # basic idea for how to implement this: return the first two results (need to handle this with the push()
-        # command in carousel.js. So call the /api/place/nearbysearch, loop through the first two and get
-        # details/photos, then make the remaining 18 (or whatever the # is) a celery task. these should be
-        # in the database by the time the user has swiped through a few cards and easy to request.
+        # if getting new results from google, logic is: get next 20, save the first 2 locally and return them,
+        # and process the next 18 async.
+        # get most recent page_token for these coordinates (if applicable) to get next set of data.
+        # *note* lat/lng doesn't change in real time on the client side currently, its set when they start up the app.
         response = gmaps.places_nearby(location=(lat, lng),
-                                open_now=True,
-                                radius=8000,  # 8000 meters, ~5 miles
-                                type='restaurant',
-                                )
+                                       open_now=True,
+                                       radius=8000,  # 8000 meters, ~5 miles
+                                       type='restaurant',
+                                       page_token=LatLngPositionAndPageToken.get_page_token_by_lat_lng(lat, lng).page_token
+                                       )
 
-        for item in response['results'][:2]: #first two
+        if 'next_page_token' in response:
+            LatLngPositionAndPageToken.insert_or_update_page_token(lat, lng, response['next_page_token'])
+        else:
+            LatLngPositionAndPageToken.insert_or_update_page_token(lat, lng, None, True)
+
+        for item in response['results'][:2]:  # first two
             get_place_details_and_insert_to_db(gmaps, item, current_app.config['GOOGLE_API_KEY'])
 
         insert_to_db_async.delay(response['results'][2:], current_app.config['GOOGLE_API_KEY'])
 
-        result_array = get_place(user, lat, lng, num_cards)
+        if not result_array:
+            result_array = []
+
+        place = get_place(user, lat, lng, num_cards - (0 if not result_array else len(result_array)))
+
+        if place:
+            result_array.append(place)
+
         if result_array:
             return jsonify(result_array)
         else:
