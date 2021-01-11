@@ -24,8 +24,12 @@ class Carousel {
         this.restaurantUserRatingsTotal = ''
         this.google_place_url = ''
 
+        /* keep gmaps places in an array and shift() off the array to populate a card. */
+        this.places_array = []
+
+        this.initFirstCards()
         //get first 2 cards from database. success callback "pushes" cards onto the deck.
-        this.getCards(2)
+        this.getCards()
     }
 
     getMilesAway(distance) {
@@ -71,11 +75,10 @@ class Carousel {
             message.id = 'noRestaurantsMessage'
             message.innerHTML = 'No more restaurants open in your area.'
             card.appendChild(message)
-            // board.insertBefore(card, board.firstChild)
 
-            //disable swipe left/right buttons on the "no restaurants" message card.
-            document.getElementById('swipeLeftButton').style.pointerEvents = 'none'
-            document.getElementById('swipeRightButton').style.pointerEvents = 'none'
+            if (card.id === 'card_0') {
+                this.board.removeChild(this.nextCard)
+            }
         }
         else {
             document.getElementById('swipeLeftButton').style.pointerEvents = 'auto'
@@ -93,15 +96,21 @@ class Carousel {
 
             images[currImageArrayIndex] = new Array()
 
-            //preload images
-            for (var i = 0; i < result.photo_urls.length; i++) {
-                images[currImageArrayIndex][i] = new Image()
-                images[currImageArrayIndex][i].src = result.photo_urls[i]['photo_url_' + i.toString()]
-            }
-
-            card.setAttribute('numImages', result.photo_urls.length)
             card.setAttribute('currImage', 1)
             card.setAttribute('currImageArrayIndex', currImageArrayIndex)
+
+            if (result.photo_urls) {
+                //preload images
+                for (var i = 0; i < result.photo_urls.length; i++) {
+                    images[currImageArrayIndex][i] = new Image()
+                    images[currImageArrayIndex][i].src = result.photo_urls[i]['photo_url_' + i.toString()]
+                }
+
+                card.setAttribute('numImages', result.photo_urls.length)
+            }
+            else {
+                card.setAttribute('numImages', 1)
+            }
 
             /* create current image # indicator */
             let imageNumIndicator = document.createElement('div')
@@ -208,58 +217,95 @@ class Carousel {
         }
     }
 
-    getCards(num_cards) {
+    checkPushes() {
+        if (!this.topCard.getAttribute('gmaps_place_id')) {
+            this.push(this.places_array.shift())
+            if (this.places_array.length === 0) {
+                //disable swipe left/right buttons on the "no restaurants" message card.
+                document.getElementById('swipeLeftButton').style.pointerEvents = 'none'
+                document.getElementById('swipeRightButton').style.pointerEvents = 'none'
+            }
+        }
+        if (this.places_array.length > 0 && !this.nextCard.getAttribute('gmaps_place_id')) {
+            this.push(this.places_array.shift())
+        }
+    }
+
+    initFirstCards() {
+        //first card
+        let card = document.createElement('div')
+        card.classList.add('card')
+
+        card.id = 'card_0'
+        board.insertBefore(card, board.firstChild)
+
+        //second card
+        card = document.createElement('div')
+        card.classList.add('card')
+
+        //$('#board').children().eq(0).attr('id', 'card_0')
+        card.id = 'card_1'
+        board.insertBefore(card, board.firstChild)
+        this.handle()
+    }
+
+    getCards() {
         var self = this;
 
         //getCard() is always called after a card is thrown. we don't want to get the next card
         //if the top card is the 'No restaurants in area' card.
         if (document.querySelector('#board #card_1 #noRestaurantsMessage')) {
+            //disable swipe left/right buttons on the "no restaurants" message card.
+            document.getElementById('swipeLeftButton').style.pointerEvents = 'none'
+            document.getElementById('swipeRightButton').style.pointerEvents = 'none'
             return
         }
 
-        for (let i = 0; i < num_cards; i++) {
-            //push the interactable cards on the front-end.
+        // board starts w/ 4 child elements. after initFirstCards(), count = 6. after a card is throw, count = 5.
+        if (board.childElementCount == 5) {
             let card = document.createElement('div')
             card.classList.add('card')
-
-            //childelementcount=4 for the first push() when opening the app.
-            if (board.childElementCount === 4) {
-                card.id = 'card_0'
-                board.insertBefore(card, board.firstChild)
-            } else {
-                $('#board').children().eq(0).attr('id', 'card_0')
-                card.id = 'card_1'
-                board.insertBefore(card, board.firstChild)
-                this.handle()
-            }
+            $('#board').children().eq(0).attr('id', 'card_0')
+            card.id = 'card_1'
+            board.insertBefore(card, board.firstChild)
+            this.handle()
         }
 
-        $.ajax({
-            type: "POST",
-            url: "/get_card",
+        if ((!self.places_array.length) || self.places_array.length === 2) {
+            $.ajax({
+                type: "POST",
+                url: "/get_card",
 
-            data: JSON.stringify({
-                "num_cards": num_cards,
-                "lat": cookie_lat,
-                "lng": cookie_lng
-            }),
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            success: function (result) {
-                if (result) {
-                    for (let i = 0; i < result.length; i++) {
-                        self.push(result[i])
+                data: JSON.stringify({
+                    "num_cards": 5,
+                    "lat": cookie_lat,
+                    "lng": cookie_lng
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (result) {
+                    if (result) {
+                        for (let i = 0; i < result.length; i++) {
+                            self.places_array.push(result[i])
+                        }
+                        if (result.length < 5) {
+                            self.places_array.push(null)
+                        }
                     }
-                }
-                //push empty card (no more results for user).
-                else {
-                    self.push(null)
-                }
-            },
-            error: function (result) {
-                console.log(result);
-            },
-        });
+                    //push empty card (no more results for user).
+                    else {
+                        self.places_array.push(null)
+                    }
+                    self.checkPushes()
+                },
+                error: function (result) {
+                    console.log(result);
+                },
+            });
+        }
+        else {
+            self.checkPushes()
+        }
     }
 
 
@@ -375,7 +421,9 @@ class Carousel {
 
         /* show restaurant info on card again */
         if (this.topCard) {
-            this.topCard.children[3].style.display = 'block'
+            if (this.topCard.children[3]) {
+                this.topCard.children[3].style.display = 'block'
+            }
 
             /* hammer object is the card. switch back to regular hammer mode. none means it's just responding to the card listeners (pan and tap).*/
             this.hammer.set({touchAction: 'none'})
@@ -456,8 +504,9 @@ class Carousel {
                 self.restaurantRating,
                 self.restaurantUserRatingsTotal)
 
+            this.topCard = null
             // add new card
-            this.getCards(1)
+            this.getCards()
             this.isInfoView = false
             this.isRightSwipe = false
             this.isLeftSwipe = false
@@ -573,6 +622,9 @@ class Carousel {
 
         if (this.topCard.children[1]) {
             this.topCard.children[1].style.opacity = (posX + 475.5) / 400;
+        }
+
+        if (this.topCard.children[2]) {
             this.topCard.children[2].style.opacity = ((posX + 475.5) / 400) * -1;
         }
 
@@ -583,6 +635,9 @@ class Carousel {
         if (e.isFinal) {
             if (this.topCard.children[1]) {
                 this.topCard.children[1].style.opacity = 0;
+            }
+
+            if (this.topCard.children[2]) {
                 this.topCard.children[2].style.opacity = 0;
             }
 
@@ -590,7 +645,6 @@ class Carousel {
 
             // set back transition properties
             this.topCard.style.transition = 'transform 200ms ease-out'
-            // if (this.nextCard) this.nextCard.style.transition = 'transform 100ms linear'
 
             // check threshold and movement direction
             if (propX > 0.25 && e.direction === Hammer.DIRECTION_RIGHT && this.topCard.getAttribute('gmaps_place_id')) {

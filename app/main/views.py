@@ -153,10 +153,12 @@ def get_place(user, lat, lng, num_results):
             })
 
         return result_array
+    else:
+        return []
 
 
-@celery.task(bind=True)
-def insert_to_db_async(self, items, google_api_key):
+@celery.task()
+def insert_to_db_async(items, google_api_key):
     gmaps = googlemaps.Client(key=google_api_key)
     for item in items:
         get_place_details_and_insert_to_db(gmaps, item, google_api_key)
@@ -171,6 +173,7 @@ def get_card():
     num_cards = int(data.get('num_cards'))
 
     # check places table first
+    result_array = []
     user = User.get_user_id_by_pairing_code(session['user_pairing_code'])
     result_array = get_place(user, lat, lng, num_cards)
     if result_array and len(result_array) == num_cards:
@@ -180,27 +183,36 @@ def get_card():
         # and process the next 18 async.
         # get most recent page_token for these coordinates (if applicable) to get next set of data.
         # *note* lat/lng doesn't change in real time on the client side currently, its set when they start up the app.
+        page_token = ''
+        lat_lng_page_token = LatLngPositionAndPageToken.get_page_token_by_lat_lng(lat, lng)
+        if lat_lng_page_token and lat_lng_page_token.is_final_page_token:
+            if result_array:
+                return jsonify(result_array)
+            else:
+                resp = make_response('', 204)
+                return resp
+
+        elif lat_lng_page_token:
+            page_token = lat_lng_page_token.page_token
+
         response = gmaps.places_nearby(location=(lat, lng),
                                        open_now=True,
                                        radius=8000,  # 8000 meters, ~5 miles
                                        type='restaurant',
-                                       page_token=LatLngPositionAndPageToken.get_page_token_by_lat_lng(lat, lng).page_token
+                                       page_token=page_token
                                        )
 
         if 'next_page_token' in response:
-            LatLngPositionAndPageToken.insert_or_update_page_token(lat, lng, response['next_page_token'])
+            LatLngPositionAndPageToken.insert_or_update_page_token(lat, lng, response['next_page_token'], False)
         else:
             LatLngPositionAndPageToken.insert_or_update_page_token(lat, lng, None, True)
 
-        for item in response['results'][:2]:  # first two
+        for item in response['results'][:num_cards-len(result_array)]:  # first x
             get_place_details_and_insert_to_db(gmaps, item, current_app.config['GOOGLE_API_KEY'])
 
-        insert_to_db_async.delay(response['results'][2:], current_app.config['GOOGLE_API_KEY'])
+        insert_to_db_async.delay(response['results'][num_cards-len(result_array):], current_app.config['GOOGLE_API_KEY'])
 
-        if not result_array:
-            result_array = []
-
-        place = get_place(user, lat, lng, num_cards - (0 if not result_array else len(result_array)))
+        place = get_place(user, lat, lng, num_cards - len(result_array))
 
         if place:
             result_array.append(place)
@@ -287,28 +299,37 @@ def post_swipe():
     UserPlace.update_swipe(user_id=user.id, place_id=place.id, is_swipe_right=is_swipe_right)
 
     # check if matched user also swiped right on the same restaurant.
-    if is_swipe_right and UserPlace.check_if_match_user_swiped_right(user_id_matched=user.user_id_matched,
-                                                                     place_id=place.id):
+    if is_swipe_right:
         # need to pass place name and first photo URL.
         place_json = json.loads(place.json_string)
 
         photo_url = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=700&maxheight=700&photoreference= ' \
                     + place_json['photos'][0]['photo_reference'] \
                     + '&key=' + current_app.config['GOOGLE_API_KEY']
-        # publish to user
-        sse.publish({'restaurant_name': place_json['name'],
-                     'photo_url': photo_url,
-                     'google_place_url': place_json['url'],
-                     'event_name': 'match'},
-                    channel=user.user_pairing_code)
 
-        # publish to matched user
-        user_matched = User.get_by_id(user.user_id_matched)
-        sse.publish({'restaurant_name': place_json['name'],
-                     'photo_url': photo_url,
-                     'google_place_url': place_json['url'],
-                     'event_name': 'match'},
-                    channel=user_matched.user_pairing_code)
+        if UserPlace.check_if_match_user_swiped_right(user_id_matched=user.user_id_matched,
+                                                                     place_id=place.id):
+            # publish to user
+            sse.publish({'restaurant_name': place_json['name'],
+                         'photo_url': photo_url,
+                         'google_place_url': place_json['url'],
+                         'event_name': 'match'},
+                        channel=user.user_pairing_code)
 
+            # publish to matched user
+            user_matched = User.get_by_id(user.user_id_matched)
+            sse.publish({'restaurant_name': place_json['name'],
+                         'photo_url': photo_url,
+                         'google_place_url': place_json['url'],
+                         'event_name': 'match'},
+                        channel=user_matched.user_pairing_code)
+            resp = make_response('', 204)
+            return resp
+        else:
+            resp = make_response(jsonify(restaurant_name=place_json['name'],
+                                         photo_url=photo_url,
+                                         url=place_json['url'])
+                                 , 200)
+            return resp
     resp = make_response('', 204)
     return resp

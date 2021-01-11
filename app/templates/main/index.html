@@ -280,12 +280,6 @@
             } else {
                 carousel.throwCard(carousel.board.clientWidth, 0)
             }
-            if (!matched_user_pairing_code) {
-                openMatchOverlay(
-                    carousel.topCard.getAttribute('restaurant_name_on_card'),
-                    carousel.topCard.getAttribute('photo_url'),
-                    carousel.topCard.getAttribute('url'))
-            }
         }
 
         function pairRequest() {
@@ -320,9 +314,9 @@
                 success: function(result) {
                     if (!matched_user_pairing_code && is_swipe_right) {
                         openMatchOverlay(
-                            carousel.topCard.getAttribute('restaurant_name_on_card'),
-                            carousel.topCard.getAttribute('photo_url'),
-                            carousel.topCard.getAttribute('url'))
+                            result.restaurant_name,
+                            result.photo_url,
+                            result.url)
                     }
                 },
                 error: function(result) {
