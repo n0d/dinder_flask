@@ -112,15 +112,17 @@ def pair_accept():
         return resp
 
 
-def get_place(user, lat, lng, num_results):
+#look in local database for nearby places.
+def get_places(user, lat, lng, num_results, str_gmaps_place_ids_in_client_stack):
+    result_array = []
     place_array = Place.get_nearby_place(
         user_id=user.id,
         lat=lat,
         lng=lng,
         within_x_miles=5,
-        num_results=num_results)
+        num_results=num_results,
+        str_gmaps_place_ids_in_client_stack=str_gmaps_place_ids_in_client_stack)
     if place_array:
-        result_array = []
         for place in place_array:
             user_place = UserPlace.get_user_place_by_user_id_and_place_id(user.id, place['id'])
             if not user_place:
@@ -152,9 +154,7 @@ def get_place(user, lat, lng, num_results):
                 'url': place_json['url']
             })
 
-        return result_array
-    else:
-        return []
+    return result_array
 
 
 @celery.task()
@@ -164,18 +164,28 @@ def insert_to_db_async(items, google_api_key):
         get_place_details_and_insert_to_db(gmaps, item, google_api_key)
 
 
-@main.route('/get_card', methods=['POST'])
-def get_card():
+@main.route('/get_cards', methods=['POST'])
+def get_cards():
     gmaps = googlemaps.Client(key=current_app.config['GOOGLE_API_KEY'])
     data = ast.literal_eval(request.data.decode("utf-8"))
     lat = str(data.get('lat'))
     lng = str(data.get('lng'))
     num_cards = int(data.get('num_cards'))
+    gmaps_place_ids_in_client_stack = data.get('gmaps_place_ids_in_client_stack')
+    str_gmaps_place_ids_in_client_stack = ''
+
+    if not gmaps_place_ids_in_client_stack:
+        str_gmaps_place_ids_in_client_stack = "''" #at app start, NOT IN ('')
+    else:
+        if gmaps_place_ids_in_client_stack:
+            for place_id in gmaps_place_ids_in_client_stack:
+                str_gmaps_place_ids_in_client_stack += "'" + place_id + "',"
+            str_gmaps_place_ids_in_client_stack = str_gmaps_place_ids_in_client_stack.rstrip(',')
 
     # check places table first
     result_array = []
     user = User.get_user_id_by_pairing_code(session['user_pairing_code'])
-    result_array = get_place(user, lat, lng, num_cards)
+    result_array = get_places(user, lat, lng, num_cards, str_gmaps_place_ids_in_client_stack)
     if result_array and len(result_array) == num_cards:
         return jsonify(result_array)
     else:
@@ -212,7 +222,7 @@ def get_card():
 
         insert_to_db_async.delay(response['results'][num_cards-len(result_array):], current_app.config['GOOGLE_API_KEY'])
 
-        place = get_place(user, lat, lng, num_cards - len(result_array))
+        place = get_places(user, lat, lng, num_cards - len(result_array))
 
         if place:
             result_array.append(place)

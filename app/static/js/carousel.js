@@ -272,14 +272,27 @@ class Carousel {
         }
 
         if ((!self.places_array.length) || self.places_array.length === 2) {
+            let gmaps_place_ids_in_client_stack = []
+            var x
+            for (x in self.places_array) {
+                gmaps_place_ids_in_client_stack.push(self.places_array[x].gmaps_place_id)
+            }
+            if (this.topCard.getAttribute('gmaps_place_id')) {
+                gmaps_place_ids_in_client_stack.push(this.topCard.getAttribute('gmaps_place_id'))
+            }
+            if (this.nextCard.getAttribute('gmaps_place_id')) {
+                gmaps_place_ids_in_client_stack.push(this.nextCard.getAttribute('gmaps_place_id'))
+            }
+
             $.ajax({
                 type: "POST",
-                url: "/get_card",
+                url: "/get_cards",
 
                 data: JSON.stringify({
                     "num_cards": 5,
                     "lat": cookie_lat,
-                    "lng": cookie_lng
+                    "lng": cookie_lng,
+                    "gmaps_place_ids_in_client_stack": gmaps_place_ids_in_client_stack
                 }),
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
@@ -493,7 +506,7 @@ class Carousel {
             // remove swiped card
             this.board.removeChild(this.topCard)
 
-            console.log('set below card info')
+            // console.log('set below card info')
             //set below card values to the nextCard (saved in JS variables)
             this.setBelowCardInfo(
                 self.restaurantName,

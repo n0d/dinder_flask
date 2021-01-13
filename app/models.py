@@ -39,8 +39,18 @@ class User(SurrogatePK, db.Model):
 
     @staticmethod
     def pair_user_ids(user_1, user_2):
+        # clear any old pairings
+        user_1_pairs = User.query.filter_by(user_id_matched=user_1.id).all()
+        for user in user_1_pairs:
+            user.user_id_matched = None
+
+        user_2_pairs = User.query.filter_by(user_id_matched=user_2.id).all()
+        for user in user_2_pairs:
+            user.user_id_matched = None
+
         user_1.user_id_matched = user_2.id
         user_2.user_id_matched = user_1.id
+
         db.session.commit()
 
 
@@ -72,7 +82,7 @@ class Place(SurrogatePK, db.Model):
     # relies on postgres extensions "cube" and "earthdistance".
     # point function parameters are (longitude, latitude).
     @staticmethod
-    def get_nearby_place(user_id, lat, lng, within_x_miles, num_results):
+    def get_nearby_place(user_id, lat, lng, within_x_miles, num_results, str_gmaps_place_ids_in_client_stack):
         sql_str = 'SELECT id, gmaps_place_id, ROUND(CAST(POINT(lng, lat) <@> POINT(-122.6761, 45.6257) AS NUMERIC), 1) AS distance, json_string ' \
                   'FROM t_place tp ' \
                   'WHERE NOT EXISTS (' \
@@ -80,9 +90,18 @@ class Place(SurrogatePK, db.Model):
                       'FROM t_user_place tup ' \
                       'WHERE tup.place_id = tp.id ' \
                           'AND tup.user_id = ' + str(user_id) + ') ' \
+                  'AND gmaps_place_id NOT IN (' + str(str_gmaps_place_ids_in_client_stack) + ') ' \
                                                         'GROUP BY id, gmaps_place_id, lng, lat ' \
                                                         'HAVING (point(lng, lat) <@> point(' + str(lng) + ', ' + str(lat) + ')) < ' + str(within_x_miles) + ' ' \
-                                                   'ORDER BY distance ' \
+                                                   'ORDER BY CASE WHEN EXISTS (' \
+                                                        'SELECT 1 ' \
+                                                        'FROM t_user tu ' \
+                                                        'INNER JOIN t_user_place tup2 ' \
+                                                            'ON tup2.user_id = tu.user_id_matched ' \
+                                                        'WHERE tu.id = ' + str(user_id) + ' ' \
+                                                            'AND tup2.is_swipe_right = TRUE ' \
+                                                            'AND tup2.place_id = tp.id) THEN 0 ELSE 1 END, ' \
+                                                        'distance ' \
                                                    'LIMIT ' + str(num_results) + ';'
 
         resultproxy = db.engine.execute(text(sql_str))
