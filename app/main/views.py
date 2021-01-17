@@ -77,8 +77,24 @@ def pair_request():
         resp = make_response('', 204)
         return resp
     else:
-        resp = make_response('', 400)
+        resp = make_response('', 404)
         return resp
+
+
+# user requested to unpair with currently paired user
+@main.route('/unpair_request', methods=['POST'])
+def unpair_request():
+    data = ast.literal_eval(request.data.decode("utf-8"))
+    user_code = str(data.get('user_pairing_code')).upper()
+    user = User.query.filter_by(user_pairing_code=user_code).first()
+    user_paired = User.query.filter_by(id=user.user_id_matched).first()
+
+    User.unpair_user_ids(user, user_paired)
+
+    sse.publish({"user_code": user_code, "event_name": 'unpair_request'},
+                channel=user_paired.user_pairing_code)
+
+    return make_response('', 204)
 
 
 # user receives request and hits "pair" button on the pair overlay screen.

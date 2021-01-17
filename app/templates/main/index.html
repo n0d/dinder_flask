@@ -8,10 +8,11 @@
 
     {% block page_content %}
         <div id="accountInfo">
-            <div class="row accountInfoItem" id="pairedInfo" style="border: 1px solid red;" >
-                <div class="twelve columns"  >
-                    <h2>Not paired up with anyone.</h2>
+            <div class="row accountInfoItem" id="pairedInfo" style="border: 1px solid gray;" >
+                <div class="six columns"  >
+                    <h2>Not paired up.</h2>
                 </div>
+                <input id="submitUnpairCodeRequest" class="button-primary columns six" type="submit" value="Unpair">
             </div>
             <div class="row accountInfoItem"  >
                 <div class="nine columns">
@@ -21,13 +22,16 @@
                     <h2></h2>
                 </div>
             </div>
-            <div class="accountInfoItem">
+            <div class=" row accountInfoItem" id = "enterCodeToPair">
                 <div class="row">
                     <h2>Enter Code below to pair: </h2>
                 </div>
                 <div class="row">
                     <input class="columns six" type="text" style="text-transform: uppercase" placeholder="..." id="enterCodeInput">
                     <input id="submitPairCodeRequest" class="button-primary columns six" type="submit" value="Pair">
+                </div>
+                <div class="row" id="enterCodeToPairErrorMessage" style="visibility: hidden">
+                    <h2 style="color:red"></h2>
                 </div>
             </div>
         </div>
@@ -149,8 +153,12 @@
                     $('#yourCode').find('h2').text(result.user_pairing_code.replace('\u0030', '\u00D8'))
                     //if user is matched, set the info box on the account page accordingly.
                     if (result.matched_user_pairing_code) {
-                        $('#pairedInfo').find('h2').text('Paired with User "' + result.matched_user_pairing_code.replace('\u0030', '\u00D8') + '"')
+                        $('#pairedInfo').find('h2').text('Paired with "' + result.matched_user_pairing_code.replace('\u0030', '\u00D8') + '"')
+                        document.getElementById('enterCodeToPair').style.visibility='hidden'
                         document.getElementById('pairedInfo').style.border = '1px solid gray'
+                    }
+                    else {
+                        document.getElementById('submitUnpairCodeRequest').style.visibility='hidden'
                     }
 
                     //code to handle SSEs from flask.
@@ -168,20 +176,29 @@
                             document.getElementById('acceptPairButton').style.visibility='hidden'
                             document.getElementById('acceptPairButton').style.pointerEvents='none'
                             document.getElementById('dontPairButton').innerText = 'OK'
-                            $('#pairedInfo').find('h2').text('Paired with User "' + data.user_code.replace('\u0030', '\u00D8') + '"')
+                            $('#pairedInfo').find('h2').text('Paired with "' + data.user_code.replace('\u0030', '\u00D8') + '"')
                             document.getElementById('pairedInfo').style.border = '1px solid gray'
+                            document.getElementById('submitUnpairCodeRequest').style.visibility='visible'
+                            document.getElementById('enterCodeToPair').style.visibility='hidden';
                         }
                         else if (data.event_name === 'match') {
                             openMatchOverlay(data.restaurant_name, data.photo_url, data.google_place_url, matched_user_pairing_code)
                         }
-                        console.log(data)
+                        else if (data.event_name === 'unpair_request') {
+                            openUnpairOverlay('No longer paired with "' + data.user_code.replace('\u0030', '\u00D8') + '".')
+                            document.getElementById('submitUnpairCodeRequest').style.visibility='hidden'
+                            document.getElementById('enterCodeToPair').style.visibility='visible';
+                            $('#pairedInfo').find('h2').text('Not paired up.')
+                        }
+                        {#console.log(data)#}
                     }
                     //at this point,
                     //1) user allows location services in browser
                     //2) /create_user_if_not_exists (so there's a session, user pairing code, etc.)
                     //3) event source for SSEs is created
                     carousel = new Carousel(board)
-                    console.log(result);
+                    {#console.log(result);#}
+
                 }, //end success callback
                 error: function(result) {
                     console.log(result);
@@ -293,7 +310,33 @@
                 contentType:"application/json; charset=utf-8",
                 dataType: "json",
                 success: function(result) {
+                    document.getElementById('enterCodeToPair').style.border='1px solid gray'
+                    document.getElementById('enterCodeToPairErrorMessage').style.visibility='hidden'
                     console.log(result);
+                },
+                error: function(result) {
+                    document.getElementById('enterCodeToPair').style.border='1px solid red'
+                    document.getElementById('enterCodeToPairErrorMessage').style.visibility='visible'
+                    $('#enterCodeToPairErrorMessage').find('h2').text('Invalid User ' + $('#enterCodeInput').val())
+                    console.log(result);
+                },
+            });
+        }
+
+        function unpairRequest() {
+            $.ajax({
+                type: "POST",
+                url: "/unpair_request",
+                data: JSON.stringify({
+                    "user_pairing_code":user_pairing_code
+                }),
+                contentType:"application/json; charset=utf-8",
+                dataType: "json",
+                success: function(result) {
+                    console.log(result);
+                    document.getElementById('enterCodeToPair').style.visibility='visible';
+                    document.getElementById('submitUnpairCodeRequest').style.visibility='hidden'
+                    $('#pairedInfo').find('h2').text('Not paired up.');
                 },
                 error: function(result) {
                     console.log(result);
@@ -330,6 +373,11 @@
             pairRequest()
         });
 
+        $('#submitUnpairCodeRequest').click(function(e) {
+            e.preventDefault()
+            unpairRequest()
+        });
+
         document.getElementById('acceptPairButton').onclick = function () {
             $.ajax({
                 type: "POST",
@@ -346,8 +394,10 @@
                     document.getElementById('acceptPairButton').style.visibility='hidden'
                     document.getElementById('acceptPairButton').style.pointerEvents='none'
                     document.getElementById('dontPairButton').innerText = 'OK'
-                    $('#pairedInfo').find('h2').text('Paired with User "' + user_code_requesting.replace('\u0030', '\u00D8') + '"')
+                    $('#pairedInfo').find('h2').text('Paired with "' + user_code_requesting.replace('\u0030', '\u00D8') + '"')
                     document.getElementById('pairedInfo').style.border = '1px solid gray'
+                    document.getElementById('submitUnpairCodeRequest').style.visibility='visible'
+                    document.getElementById('enterCodeToPair').style.visibility='hidden';
                     console.log(result);
                 },
                 error: function(result) {
@@ -417,6 +467,14 @@
             document.getElementById('acceptPairButton').style.visibility='visible'
             document.getElementById('acceptPairButton').style.pointerEvents='auto'
             document.getElementById('dontPairButton').innerText = "Don't Pair"
+            document.getElementById('pair-overlay').style.height = "100%";
+        }
+
+        function openUnpairOverlay(message) {
+            //clear previous message and populate pair message.
+            $('#pairMessage').find('h1').text(message)
+            document.getElementById('acceptPairButton').style.visibility='hidden'
+            document.getElementById('dontPairButton').innerText = "OK"
             document.getElementById('pair-overlay').style.height = "100%";
         }
 

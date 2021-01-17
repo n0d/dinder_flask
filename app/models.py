@@ -53,6 +53,13 @@ class User(SurrogatePK, db.Model):
 
         db.session.commit()
 
+    @staticmethod
+    def unpair_user_ids(user_1, user_2):
+        user_1.user_id_matched = None
+        user_2.user_id_matched = None
+
+        db.session.commit()
+
 
 class Place(SurrogatePK, db.Model):
     __tablename__ = 't_place'
