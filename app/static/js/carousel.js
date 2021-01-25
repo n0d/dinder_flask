@@ -249,6 +249,16 @@ class Carousel {
         this.handle()
     }
 
+    resetCards() {
+        this.places_array = []
+        document.getElementById('card_0').remove()
+        document.getElementById('card_1').remove()
+        this.topCard.removeAttribute('gmaps_place_id')
+        this.nextCard.removeAttribute('gmaps_place_id')
+        this.initFirstCards()
+        this.getCards()
+    }
+
     getCards() {
         var self = this;
 
@@ -282,6 +292,10 @@ class Carousel {
             }
             if (this.nextCard.getAttribute('gmaps_place_id')) {
                 gmaps_place_ids_in_client_stack.push(this.nextCard.getAttribute('gmaps_place_id'))
+            }
+
+            if (this.places_array.length > 0 && !this.nextCard.getAttribute('gmaps_place_id')) {
+                this.push(this.places_array.shift())
             }
 
             $.ajax({
@@ -319,6 +333,7 @@ class Carousel {
         else {
             self.checkPushes()
         }
+        //
     }
 
 
