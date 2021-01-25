@@ -95,6 +95,26 @@
                 </div>
             </div>
         </div>
+        <div id="tutorial-overlay" class="overlay">
+            <div class="container">
+                <div id="tutorialMessage" class="row overlayMessage">
+                    <h1>
+                        <span1></span1>
+                        <br/>
+                        <br/>
+                        <span2></span2>
+                        <br/>
+                        <br/>
+                        <span3></span3>
+                        <br/>
+                        <br/>
+                    </h1>
+                </div>
+                <div  class="row" >
+                    <button class="overlayAcceptButton" id="acceptTutorialButton">OK</button>
+                </div>
+            </div>
+        </div>
 
     {% endblock %}
 
@@ -180,6 +200,8 @@
                             document.getElementById('pairedInfo').style.border = '1px solid gray'
                             document.getElementById('submitUnpairCodeRequest').style.visibility='visible'
                             document.getElementById('enterCodeToPair').style.visibility='hidden';
+                            matched_user_pairing_code=data.user_code
+                            carousel.resetCards()
                         }
                         else if (data.event_name === 'match') {
                             openMatchOverlay(data.restaurant_name, data.photo_url, data.google_place_url, matched_user_pairing_code)
@@ -189,6 +211,7 @@
                             document.getElementById('submitUnpairCodeRequest').style.visibility='hidden'
                             document.getElementById('enterCodeToPair').style.visibility='visible';
                             $('#pairedInfo').find('h2').text('Not paired up.')
+                            matched_user_pairing_code = ''
                         }
                         {#console.log(data)#}
                     }
@@ -198,6 +221,10 @@
                     //3) event source for SSEs is created
                     carousel = new Carousel(board)
                     {#console.log(result);#}
+                    openTutorialOverlay(
+                        'Dinder is an easy way to find nearby restaurants.',
+                        'Swipe right for YES, and left for NO.',
+                        'To pair up with a friend, click the account button on the top left. You can swipe together until you find a match.')
 
                 }, //end success callback
                 error: function(result) {
@@ -277,6 +304,11 @@
             document.getElementById('pair-overlay').style.height = "0%";
          }
 
+         // close pair overlay if "don't pair" or if upper right X is pressed.
+         document.getElementById('acceptTutorialButton').onclick = function () {
+            document.getElementById('tutorial-overlay').style.height = "0%";
+         }
+
         let isAccountView = false
 
         //listeners for swipe left/right buttons. history.back() executes the popstate listener below (calls shrinkInfo).
@@ -337,6 +369,7 @@
                     document.getElementById('enterCodeToPair').style.visibility='visible';
                     document.getElementById('submitUnpairCodeRequest').style.visibility='hidden'
                     $('#pairedInfo').find('h2').text('Not paired up.');
+                    matched_user_pairing_code = ''
                 },
                 error: function(result) {
                     console.log(result);
@@ -398,6 +431,9 @@
                     document.getElementById('pairedInfo').style.border = '1px solid gray'
                     document.getElementById('submitUnpairCodeRequest').style.visibility='visible'
                     document.getElementById('enterCodeToPair').style.visibility='hidden';
+                    matched_user_pairing_code = user_code_requesting
+                    carousel.resetCards()
+
                     console.log(result);
                 },
                 error: function(result) {
@@ -478,6 +514,14 @@
             document.getElementById('pair-overlay').style.height = "100%";
         }
 
+        function openTutorialOverlay(message1, message2, message3) {
+            $('#tutorialMessage').find('h1').find('span1').text(message1)
+            $('#tutorialMessage').find('h1').find('span2').text(message2)
+            $('#tutorialMessage').find('h1').find('span3').text(message3)
+            document.getElementById('acceptTutorialButton').innerText = "OK"
+            document.getElementById('tutorial-overlay').style.height = "100%";
+        }
+
         //loop through 5 rating stars and set the color of each star based on rating.
         function setRatingStars(div_id, strRating) {
             let spans = document.getElementById(div_id).getElementsByTagName('span')
@@ -497,15 +541,15 @@
                 if (floatRating >= (i + 1)) {
                     spans[i].style.cssText = 'background: none; \
                                               -webkit-text-fill-color: initial; \
-                                              color: orange'
+                                              color: #F9B403'
                 }
                 else if (floatRating < (i + 1) && floatRating > i) {
                     dec = (floatRating % 1).toFixed(1)
                     percent_left = dec * 100
-                    spans[i].style.cssText = 'background: -webkit-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
-                                                background: -moz-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
-                                                background: -ms-linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
-                                                background: -linear-gradient(left, orange ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
+                    spans[i].style.cssText = 'background: -webkit-linear-gradient(left, #F9B403 ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
+                                                background: -moz-linear-gradient(left, #F9B403 ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
+                                                background: -ms-linear-gradient(left, #F9B403 ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
+                                                background: -linear-gradient(left, #F9B403 ' + percent_left.toString() + '%, ' + background_color  + ' 0%); \
                                                 -webkit-text-fill-color: transparent; \
                                                 color:transparent; \
                                                 -webkit-background-clip:text; \
